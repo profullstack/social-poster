@@ -22,6 +22,7 @@ import { BrowserAutomation, SessionManager } from '../src/browser-automation.js'
 import { PostService } from '../src/post-service.js';
 import { initializeAIService } from '../src/ai-service.js';
 import { SetupWizard } from '../src/setup-wizard.js';
+import { MediaUploader } from '../src/media-upload.js';
 
 /**
  * Parse post content from command line arguments
@@ -37,11 +38,20 @@ export function parsePostContent(argv) {
     content.link = argv.link; // Optional link for AI-generated content
     content.type = 'ai-generated';
     content.style = argv.style || 'viral'; // Default to viral style
-  } else if (argv.text || argv.link) {
-    // Check for text and link options (they take priority over positional args)
+  } else if (argv.text || argv.link || argv.file) {
+    // Check for text, link, and file options (they take priority over positional args)
     content.text = argv.text;
     content.link = argv.link;
-    content.type = argv.link ? 'link' : 'text';
+    content.file = argv.file;
+    
+    // Determine content type based on what's provided
+    if (argv.file) {
+      content.type = argv.link ? 'media-link' : 'media';
+    } else if (argv.link) {
+      content.type = 'link';
+    } else {
+      content.type = 'text';
+    }
   } else if (argv._.length > 1) {
     // Use positional argument as text
     content.text = argv._[1];
@@ -59,13 +69,21 @@ export function parsePostContent(argv) {
 export function validatePostOptions(content) {
   const errors = [];
 
+  // Validate file if provided first (before checking for empty content)
+  if (content.file !== undefined) {
+    // Basic file path validation - detailed validation happens later
+    if (typeof content.file !== 'string' || content.file.trim() === '') {
+      errors.push('File path cannot be empty');
+    }
+  }
+
   // Check if content is empty
   if (content.type === 'ai-generated') {
     if (!content.prompt) {
       errors.push('AI prompt cannot be empty');
     }
-  } else if (!content.text && !content.link) {
-    errors.push('Post content cannot be empty');
+  } else if (!content.text && !content.link && !content.file) {
+    errors.push('Post content cannot be empty - provide text, link, or file');
   }
 
   // Validate URL if provided
@@ -140,6 +158,23 @@ export async function handlePostCommand(argv, postService = null, config = null)
       process.exit(1);
     }
 
+    // Handle media file upload
+    if (content.file) {
+      console.log(colors.yellow('📎 Processing media file...'));
+      console.log(colors.cyan(`📁 File: ${content.file}`));
+
+      const mediaUploader = new MediaUploader();
+      const uploadResult = await mediaUploader.prepareUpload(content.file);
+
+      if (!uploadResult.success) {
+        console.error(colors.red(`❌ Media file validation failed: ${uploadResult.error}`));
+        process.exit(1);
+      }
+
+      content.media = uploadResult.file;
+      console.log(colors.green(`✅ Media file validated: ${uploadResult.file.formattedSize} ${uploadResult.file.type}`));
+    }
+
     // Handle AI-generated content
     if (content.type === 'ai-generated') {
       if (!isAIReady(config)) {
@@ -168,7 +203,7 @@ export async function handlePostCommand(argv, postService = null, config = null)
       }
 
       // Replace content with AI-generated content
-      content = aiResult.content;
+      content = { ...content, ...aiResult.content };
       console.log(colors.green('✨ AI-generated content:'));
       console.log(colors.cyan(`📄 Text: ${content.text}`));
       if (content.link) {
@@ -195,7 +230,11 @@ export async function handlePostCommand(argv, postService = null, config = null)
 
     console.log(colors.yellow(`📤 Posting to: ${targetPlatforms.join(', ')}`));
 
-    if (content.type === 'link') {
+    // Display content summary
+    if (content.media) {
+      console.log(colors.cyan(`📎 Media: ${content.media.name} (${content.media.formattedSize})`));
+    }
+    if (content.type === 'link' || content.type === 'media-link') {
       console.log(colors.cyan(`🔗 Link: ${content.link}`));
     }
     if (content.text && content.type !== 'ai-generated') {
@@ -415,6 +454,11 @@ function configureCommandLine() {
         .option('link', {
           alias: 'l',
           describe: 'Link to share',
+          type: 'string'
+        })
+        .option('file', {
+          alias: 'f',
+          describe: 'Media file to upload (image or video)',
           type: 'string'
         })
         .option('prompt', {

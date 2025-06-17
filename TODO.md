@@ -36,7 +36,7 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - [x] Create posting service for tweets
 - [x] Add support for text and link posts
 - [x] Handle rate limiting and error handling
-- [ ] Add support for media uploads
+- [x] Add support for media uploads
 - [ ] Add support for threads/tweet chains
 
 ### LinkedIn
@@ -91,7 +91,7 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - [ ] Batch posting from CSV/JSON files
 - [ ] Scheduled posting (cron-like functionality)
 - [ ] Template system for different post types
-- [ ] Media upload support (images, videos)
+- [x] Media upload support (images, videos)
 - [ ] Post analytics and tracking
 - [ ] Webhook support for post status updates
 - [x] Multi-platform posting orchestration
@@ -144,6 +144,7 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - ✅ **Error Handling**: Comprehensive error handling and reporting
 - ✅ **Retry Logic**: Automatic retry for failed posts
 - ✅ **Statistics**: Post success/failure statistics
+- ✅ **Media Upload Support**: Images and videos with validation and size limits
 
 ### Testing & Quality
 - ✅ **Test Suite**: Comprehensive Mocha + Chai tests

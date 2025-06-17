@@ -5,6 +5,7 @@
 
 import { expect } from 'chai';
 import sinon from 'sinon';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -88,6 +89,30 @@ describe('CLI', () => {
       expect(content.text).to.equal('Option text');
       expect(content.link).to.equal('https://example.com');
     });
+
+    it('should parse media file post', () => {
+      const argv = { _: ['post'], file: '/path/to/image.jpg', text: 'Check out this image!' };
+      const content = parsePostContent(argv);
+      expect(content.file).to.equal('/path/to/image.jpg');
+      expect(content.text).to.equal('Check out this image!');
+      expect(content.type).to.equal('media');
+    });
+
+    it('should parse media file with link post', () => {
+      const argv = { _: ['post'], file: '/path/to/video.mp4', link: 'https://example.com', text: 'Video with link' };
+      const content = parsePostContent(argv);
+      expect(content.file).to.equal('/path/to/video.mp4');
+      expect(content.link).to.equal('https://example.com');
+      expect(content.text).to.equal('Video with link');
+      expect(content.type).to.equal('media-link');
+    });
+
+    it('should parse file-only post', () => {
+      const argv = { _: ['post'], file: '/path/to/image.png' };
+      const content = parsePostContent(argv);
+      expect(content.file).to.equal('/path/to/image.png');
+      expect(content.type).to.equal('media');
+    });
   });
 
   describe('validatePostOptions', () => {
@@ -124,7 +149,7 @@ describe('CLI', () => {
       const result = validatePostOptions(content);
       
       expect(result.valid).to.be.false;
-      expect(result.errors).to.include('Post content cannot be empty');
+      expect(result.errors).to.include('Post content cannot be empty - provide text, link, or file');
     });
 
     it('should reject invalid URL', () => {
@@ -150,6 +175,32 @@ describe('CLI', () => {
       
       expect(result.valid).to.be.false;
       expect(result.errors).to.include('Text is too long (maximum 280 characters)');
+    });
+
+    it('should validate media file post', () => {
+      const content = { file: '/path/to/image.jpg', text: 'Image post', type: 'media' };
+      const validation = validatePostOptions(content);
+      expect(validation.valid).to.be.true;
+    });
+
+    it('should validate file-only post', () => {
+      const content = { file: '/path/to/video.mp4', type: 'media' };
+      const validation = validatePostOptions(content);
+      expect(validation.valid).to.be.true;
+    });
+
+    it('should reject empty file path', () => {
+      const content = { file: '', type: 'media' };
+      const validation = validatePostOptions(content);
+      expect(validation.valid).to.be.false;
+      expect(validation.errors).to.include('File path cannot be empty');
+    });
+
+    it('should reject whitespace-only file path', () => {
+      const content = { file: '   ', type: 'media' };
+      const validation = validatePostOptions(content);
+      expect(validation.valid).to.be.false;
+      expect(validation.errors).to.include('File path cannot be empty');
     });
   });
 
@@ -246,11 +297,68 @@ describe('CLI', () => {
         },
       });
 
-      const consoleStub = sandbox.stub(console, 'error');
+      const consoleStub = sandbox.stub(console, 'log');
 
       await handlePostCommand(argv, mockPostService);
 
       expect(consoleStub.called).to.be.true;
+    });
+
+    it('should handle media file upload in post command', async () => {
+      // Create a temporary test file
+      const testFile = path.join(__dirname, 'temp-test-image.jpg');
+      const imageData = Buffer.from('fake-image-data');
+      fs.writeFileSync(testFile, imageData);
+
+      const argv = {
+        _: ['post'],
+        file: testFile,
+        text: 'Image post',
+        platforms: 'x'
+      };
+
+      mockPostService.post.resolves({
+        success: true,
+        results: {
+          x: { success: true, postId: '123' }
+        }
+      });
+
+      const consoleStub = sandbox.stub(console, 'log');
+
+      try {
+        await handlePostCommand(argv, mockPostService);
+        
+        // Verify that post was called with media content
+        const postCall = mockPostService.post.getCall(0);
+        const content = postCall.args[0];
+        expect(content.media).to.exist;
+        expect(content.media.type).to.equal('image');
+        expect(content.type).to.equal('media');
+        
+        expect(consoleStub.called).to.be.true;
+      } finally {
+        // Clean up test file
+        if (fs.existsSync(testFile)) {
+          fs.unlinkSync(testFile);
+        }
+      }
+    });
+
+    it('should handle invalid media file in post command', async () => {
+      const argv = {
+        _: ['post'],
+        file: '/nonexistent/file.jpg',
+        platforms: 'x'
+      };
+
+      const consoleStub = sandbox.stub(console, 'error');
+      const exitStub = sandbox.stub(process, 'exit');
+
+      await handlePostCommand(argv, mockPostService);
+
+      expect(consoleStub.called).to.be.true;
+      expect(exitStub.calledWith(1)).to.be.true;
     });
   });
 
