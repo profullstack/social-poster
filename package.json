@@ -1,0 +1,113 @@
+{
+  "name": "@profullstack/social-poster",
+  "version": "1.0.0",
+  "description": "A CLI tool for posting to multiple social media platforms with browser-based authentication",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md",
+    "bin",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/profullstack/social-poster.git"
+  },
+  "bugs": {
+    "url": "https://github.com/profullstack/social-poster/issues"
+  },
+  "homepage": "https://profullstack.com",
+  "scripts": {
+    "test": "mocha test/**/*.test.js",
+    "test:config": "mocha test/config-manager.test.js",
+    "test:auth": "mocha test/browser-auth.test.js",
+    "test:platforms": "mocha test/platforms/*.test.js",
+    "test:cli": "mocha test/cli.test.js",
+    "example": "node examples/basic-usage.js",
+    "example:batch": "node examples/batch-posting.js",
+    "cli": "./bin/social-poster.js",
+    "setup": "./bin/social-poster.js setup",
+    "post": "./bin/social-poster.js post",
+    "login": "./bin/social-poster.js login",
+    "status": "./bin/social-poster.js status",
+    "platforms": "./bin/social-poster.js platforms",
+    "lint": "eslint src/ test/ bin/ --fix",
+    "format": "prettier --write src/ test/ bin/ examples/"
+  },
+  "bin": {
+    "social-poster": "./bin/social-poster.js",
+    "sp": "./bin/social-poster.js"
+  },
+  "keywords": [
+    "social-media",
+    "posting",
+    "automation",
+    "twitter",
+    "x",
+    "linkedin",
+    "reddit",
+    "facebook",
+    "cli",
+    "puppeteer",
+    "browser-automation",
+    "multi-platform",
+    "social-automation"
+  ],
+  "author": "Profullstack, Inc.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.6.5",
+  "dependencies": {
+    "ansi-colors": "^4.1.3",
+    "cli-progress": "^3.12.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^12.6.3",
+    "puppeteer": "^23.9.0",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "eslint": "^8.57.0",
+    "mocha": "^10.2.0",
+    "prettier": "^3.0.0",
+    "sinon": "^17.0.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.js"
+    },
+    "./config-manager": {
+      "import": "./src/config-manager.js"
+    },
+    "./browser-auth": {
+      "import": "./src/browser-auth.js"
+    },
+    "./post-service": {
+      "import": "./src/post-service.js"
+    },
+    "./platforms/x": {
+      "import": "./src/platforms/x-com.js"
+    },
+    "./platforms/linkedin": {
+      "import": "./src/platforms/linkedin.js"
+    },
+    "./platforms/reddit": {
+      "import": "./src/platforms/reddit.js"
+    },
+    "./platforms/stacker-news": {
+      "import": "./src/platforms/stacker-news.js"
+    },
+    "./platforms/primal": {
+      "import": "./src/platforms/primal.js"
+    },
+    "./platforms/facebook": {
+      "import": "./src/platforms/facebook.js"
+    },
+    "./platforms/hacker-news": {
+      "import": "./src/platforms/hacker-news.js"
+    }
+  }
+}

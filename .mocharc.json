@@ -1,0 +1,8 @@
+{
+  "spec": "test/**/*.test.js",
+  "recursive": true,
+  "timeout": 10000,
+  "reporter": "spec",
+  "require": ["dotenv/config"],
+  "loader": "esmock"
+}
