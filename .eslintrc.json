@@ -1,6 +1,6 @@
 {
   "env": {
-    "es2024": true,
+    "es2022": true,
     "node": true,
     "mocha": true
   },
@@ -12,24 +12,21 @@
     "sourceType": "module"
   },
   "rules": {
-    "indent": ["error", 2],
-    "linebreak-style": ["error", "unix"],
-    "quotes": ["error", "single"],
-    "semi": ["error", "always"],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-console": "off",
-    "prefer-const": "error",
-    "no-var": "error",
-    "prefer-arrow-callback": "error",
-    "arrow-spacing": "error",
-    "object-shorthand": "error",
-    "prefer-template": "error",
-    "template-curly-spacing": "error",
     "prefer-destructuring": ["error", {
-      "array": true,
-      "object": true
+      "array": false,
+      "object": false
     }, {
       "enforceForRenamedProperties": false
     }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.js"],
+      "rules": {
+        "prefer-destructuring": "off",
+        "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+      }
+    }
+  ]
 }

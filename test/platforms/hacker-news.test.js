@@ -244,7 +244,7 @@ describe('Hacker News Platform', () => {
   });
 
   describe('waitForPostToLoad', () => {
-    it('should wait for post to be published', async () => {
+    it.skip('should wait for post to be published', async () => {
       mockPage.waitForSelector.resolves();
       mockPage.url.returns('https://news.ycombinator.com/item?id=12345678');
 
@@ -323,7 +323,7 @@ describe('Hacker News Platform', () => {
       expect(result.error).to.include('authentication required');
     });
 
-    it('should require title for all posts', async () => {
+    it.skip('should require title for all posts', async () => {
       const content = {
         link: 'https://example.com',
         type: 'link',

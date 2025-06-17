@@ -289,6 +289,7 @@ describe('Browser Automation', () => {
         close: sandbox.stub(),
         setViewport: sandbox.stub(),
         setUserAgent: sandbox.stub(),
+        viewport: sandbox.stub().returns({ width: 1920, height: 1080 }),
       };
 
       mockBrowser = {
@@ -322,7 +323,7 @@ describe('Browser Automation', () => {
     describe('launchBrowser', () => {
       it('should launch browser with correct options', async () => {
         // Mock puppeteer.launch
-        const puppeteerMock = {
+        const _puppeteerMock = {
           launch: sandbox.stub().resolves(mockBrowser),
         };
         
@@ -357,8 +358,9 @@ describe('Browser Automation', () => {
         const mockSessionStorage = { session: 'data' };
 
         mockPage.cookies.resolves(mockCookies);
-        mockPage.evaluate.onFirstCall().resolves(mockLocalStorage);
-        mockPage.evaluate.onSecondCall().resolves(mockSessionStorage);
+        mockPage.evaluate.onFirstCall().resolves('test-user-agent');
+        mockPage.evaluate.onSecondCall().resolves(mockLocalStorage);
+        mockPage.evaluate.onThirdCall().resolves(mockSessionStorage);
 
         const session = await browserAutomation.captureSession(mockPage);
 

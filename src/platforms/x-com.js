@@ -267,7 +267,7 @@ export class XPlatform extends BrowserAutomation {
     try {
       // Wait for URL to change to a status URL
       await page.waitForFunction(
-        () => window.location.href.includes('/status/'),
+        () => globalThis.window.location.href.includes('/status/'),
         { timeout }
       );
       return true;
@@ -282,7 +282,7 @@ export class XPlatform extends BrowserAutomation {
    * @param {object} [options] - Login options
    * @returns {Promise<boolean>} True if login successful
    */
-  async login(options = {}) {
+  async login(_options = {}) {
     const page = await this.createPage(this.platformName);
 
     try {
@@ -305,7 +305,7 @@ export class XPlatform extends BrowserAutomation {
 
       // Wait for user to complete login manually
       await page.waitForFunction(
-        () => !window.location.href.includes('/login') && !window.location.href.includes('/i/flow/login'),
+        () => !globalThis.window.location.href.includes('/login') && !globalThis.window.location.href.includes('/i/flow/login'),
         { timeout: 300000 } // 5 minutes
       );
 

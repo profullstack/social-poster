@@ -155,7 +155,7 @@ export class AIService {
    * @returns {string} System prompt
    */
   buildSystemPrompt(style, hasLink) {
-    const basePrompt = `You are an expert social media content creator specializing in viral, engaging posts.`;
+    const basePrompt = 'You are an expert social media content creator specializing in viral, engaging posts.';
     
     const stylePrompts = {
       viral: `Create content that is:
@@ -181,8 +181,8 @@ export class AIService {
     };
 
     const linkGuidance = hasLink 
-      ? `The content should naturally lead to the provided link without being overly promotional.`
-      : `Focus on creating standalone engaging content.`;
+      ? 'The content should naturally lead to the provided link without being overly promotional.'
+      : 'Focus on creating standalone engaging content.';
 
     return `${basePrompt}
 
@@ -206,7 +206,7 @@ Keep the content concise, impactful, and optimized for social media engagement. 
       userPrompt += `\n\nInclude this link naturally in the content: ${link}`;
     }
 
-    userPrompt += `\n\nMake it engaging, shareable, and optimized for maximum reach across social platforms.`;
+    userPrompt += '\n\nMake it engaging, shareable, and optimized for maximum reach across social platforms.';
 
     return userPrompt;
   }
@@ -248,10 +248,10 @@ Keep the content concise, impactful, and optimized for social media engagement. 
     // Try to break at a word boundary
     const lastSpace = truncated.lastIndexOf(' ');
     if (lastSpace > maxContentLength * 0.8) { // Only break at word if we're not losing too much
-      return truncated.substring(0, lastSpace) + '...';
+      return `${truncated.substring(0, lastSpace)}...`;
     }
     
-    return truncated + '...';
+    return `${truncated}...`;
   }
 
   /**

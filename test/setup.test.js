@@ -45,7 +45,7 @@ describe('Setup Command', () => {
     const module = await esmock('../src/setup-wizard.js', {
       inquirer: mockInquirer,
       '../src/config-manager.js': mockConfigManager,
-      '../src/post-service.js': { PostService: function() { return mockPostService; } },
+      '../src/post-service.js': { PostService() { return mockPostService; } },
     });
     SetupWizard = module.SetupWizard;
 
@@ -114,7 +114,7 @@ describe('Setup Command', () => {
       await setupWizard.selectPlatforms();
 
       const promptCall = mockInquirer.prompt.getCall(0);
-      const choices = promptCall.args[0][0].choices;
+      const {choices} = promptCall.args[0][0];
       expect(choices).to.be.an('array');
       expect(choices.length).to.equal(7); // All 7 platforms
     });

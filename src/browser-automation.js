@@ -270,7 +270,7 @@ export class BrowserAutomation {
     try {
       const session = {
         lastValidated: new Date().toISOString(),
-        userAgent: await page.evaluate(() => navigator.userAgent),
+        userAgent: await page.evaluate(() => globalThis.window.navigator.userAgent),
         viewport: page.viewport(),
       };
 
@@ -280,9 +280,9 @@ export class BrowserAutomation {
       // Get localStorage
       session.localStorage = await page.evaluate(() => {
         const storage = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          storage[key] = localStorage.getItem(key);
+        for (let i = 0; i < globalThis.window.localStorage.length; i++) {
+          const key = globalThis.window.localStorage.key(i);
+          storage[key] = globalThis.window.localStorage.getItem(key);
         }
         return storage;
       });
@@ -290,9 +290,9 @@ export class BrowserAutomation {
       // Get sessionStorage
       session.sessionStorage = await page.evaluate(() => {
         const storage = {};
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          storage[key] = sessionStorage.getItem(key);
+        for (let i = 0; i < globalThis.window.sessionStorage.length; i++) {
+          const key = globalThis.window.sessionStorage.key(i);
+          storage[key] = globalThis.window.sessionStorage.getItem(key);
         }
         return storage;
       });
@@ -400,7 +400,7 @@ export class BrowserAutomation {
    * @param {string} platform - Platform name
    * @returns {Promise<boolean>} True if logged in
    */
-  async isLoggedIn(page, platform) {
+  async isLoggedIn(_page, _platform) {
     // This will be implemented by platform-specific classes
     throw new Error('isLoggedIn method must be implemented by platform-specific classes');
   }
@@ -411,7 +411,7 @@ export class BrowserAutomation {
    * @param {object} [options] - Login options
    * @returns {Promise<boolean>} True if login successful
    */
-  async login(platform, options = {}) {
+  async login(_platform, _options = {}) {
     // This will be implemented by platform-specific classes
     throw new Error('login method must be implemented by platform-specific classes');
   }
@@ -422,7 +422,7 @@ export class BrowserAutomation {
    * @param {object} content - Content to post
    * @returns {Promise<object>} Post result
    */
-  async post(platform, content) {
+  async post(_platform, _content) {
     // This will be implemented by platform-specific classes
     throw new Error('post method must be implemented by platform-specific classes');
   }

@@ -276,7 +276,7 @@ describe('CLI', () => {
         },
       });
 
-      const consoleStub = sandbox.stub(console, 'log');
+      const _consoleStub = sandbox.stub(console, 'log');
 
       await handlePostCommand(argv, mockPostService);
 
@@ -394,7 +394,7 @@ describe('CLI', () => {
         _: ['login'],
       };
 
-      const platforms = ['x', 'linkedin', 'reddit'];
+      const _platforms = ['x', 'linkedin', 'reddit'];
       mockBrowserAutomation.login.resolves(true);
 
       const consoleStub = sandbox.stub(console, 'log');

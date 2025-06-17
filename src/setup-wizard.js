@@ -5,7 +5,7 @@
 
 import inquirer from 'inquirer';
 import { PostService } from './post-service.js';
-import { loadConfig, saveConfig, setConfigValue } from './config-manager.js';
+import { saveConfig, setConfigValue } from './config-manager.js';
 
 export class SetupWizard {
   constructor(options = {}) {

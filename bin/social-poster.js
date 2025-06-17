@@ -5,9 +5,6 @@
  * Social media posting tool with Puppeteer-based authentication
  */
 
-import fs from 'fs';
-import path from 'path';
-import readline from 'readline';
 import colors from 'ansi-colors';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -17,8 +14,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Import core modules
-import { loadConfig, saveConfig, getConfigPath, getPlatformDisplayName, getAIConfig, isAIReady } from '../src/config-manager.js';
-import { BrowserAutomation, SessionManager } from '../src/browser-automation.js';
+import { loadConfig, getConfigPath, getPlatformDisplayName, getAIConfig, isAIReady } from '../src/config-manager.js';
+import { BrowserAutomation } from '../src/browser-automation.js';
 import { PostService } from '../src/post-service.js';
 import { initializeAIService } from '../src/ai-service.js';
 import { SetupWizard } from '../src/setup-wizard.js';
@@ -54,7 +51,7 @@ export function parsePostContent(argv) {
     }
   } else if (argv._.length > 1) {
     // Use positional argument as text
-    content.text = argv._[1];
+    [, content.text] = argv._;
     content.type = 'text';
   }
 
@@ -279,7 +276,7 @@ export async function handlePostCommand(argv, postService = null, config = null)
  */
 export async function handleLoginCommand(argv, browserAutomation = null) {
   try {
-    const targetPlatform = argv._[1];
+    const [, targetPlatform] = argv._;
 
     if (targetPlatform) {
       console.log(colors.green(`🔐 Logging in to ${getPlatformDisplayName(targetPlatform)}...`));
@@ -564,7 +561,7 @@ async function handleConfigCommand(argv) {
       console.log(`  API key: ${maskedKey}`);
     } else {
       console.log(`  Status: ${colors.gray('disabled')}`);
-      console.log(`  Run 'social-poster setup' to configure AI features`);
+      console.log('  Run \'social-poster setup\' to configure AI features');
     }
 
   } catch (error) {
@@ -597,7 +594,7 @@ async function handleSetupCommand(argv) {
  */
 async function main() {
   try {
-    const argv = configureCommandLine().argv;
+    const {argv} = configureCommandLine();
 
     // Initialize services
     const config = loadConfig(argv.configPath);
@@ -608,7 +605,7 @@ async function main() {
       },
       sessionsPath: argv.sessionsPath,
     });
-    const sessionManager = postService.sessionManager;
+    const {sessionManager} = postService;
     const browserAutomation = new BrowserAutomation({
       headless: argv.headless ?? true,
       sessionsPath: argv.sessionsPath,
@@ -616,27 +613,27 @@ async function main() {
 
     // Handle different commands
     switch (argv._[0]) {
-      case 'post':
-        await handlePostCommand(argv, postService, config);
-        break;
-      case 'login':
-        await handleLoginCommand(argv, browserAutomation);
-        break;
-      case 'status':
-        await handleStatusCommand(argv, sessionManager, config);
-        break;
-      case 'platforms':
-        await handlePlatformsCommand(argv);
-        break;
-      case 'setup':
-        await handleSetupCommand(argv);
-        break;
-      case 'config':
-        await handleConfigCommand(argv);
-        break;
-      default:
-        console.error(colors.red('Unknown command'));
-        process.exit(1);
+    case 'post':
+      await handlePostCommand(argv, postService, config);
+      break;
+    case 'login':
+      await handleLoginCommand(argv, browserAutomation);
+      break;
+    case 'status':
+      await handleStatusCommand(argv, sessionManager, config);
+      break;
+    case 'platforms':
+      await handlePlatformsCommand(argv);
+      break;
+    case 'setup':
+      await handleSetupCommand(argv);
+      break;
+    case 'config':
+      await handleConfigCommand(argv);
+      break;
+    default:
+      console.error(colors.red('Unknown command'));
+      process.exit(1);
     }
 
     // Clean up

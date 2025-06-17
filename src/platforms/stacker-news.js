@@ -183,7 +183,7 @@ export class StackerNewsPlatform {
         const textArea = await page.$('textarea[name="text"], .markdown-editor textarea, [data-testid="text-input"]');
         if (textArea) {
           await page.evaluate((text) => {
-            const textElement = document.querySelector('textarea[name="text"], .markdown-editor textarea, [data-testid="text-input"]');
+            const textElement = globalThis.document.querySelector('textarea[name="text"], .markdown-editor textarea, [data-testid="text-input"]');
             if (textElement) {
               textElement.value = text;
               textElement.dispatchEvent(new Event('input', { bubbles: true }));

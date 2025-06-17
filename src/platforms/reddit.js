@@ -137,7 +137,7 @@ export class RedditPlatform {
       const textArea = await page.$('textarea[name="text"], .public-DraftEditor-content, [data-testid="textbox"]');
       if (textArea && content.text) {
         await page.evaluate((text) => {
-          const textElement = document.querySelector('textarea[name="text"], .public-DraftEditor-content, [data-testid="textbox"]');
+          const textElement = globalThis.document.querySelector('textarea[name="text"], .public-DraftEditor-content, [data-testid="textbox"]');
           if (textElement) {
             if (textElement.tagName === 'TEXTAREA') {
               textElement.value = text;

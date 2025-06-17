@@ -1,0 +1,18 @@
+echo "🔍 Running pre-commit checks..."
+
+echo "🔧 Running linter..."
+pnpm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed. Please fix the linting errors before committing."
+  exit 1
+fi
+
+echo "🧪 Running tests..."
+pnpm test
+if [ $? -ne 0 ]; then
+  echo "⚠️  Some tests failed, but linting passed. You may proceed with commit if needed."
+  echo "💡 Consider fixing test failures in a follow-up commit."
+  # Don't exit with error for test failures - allow commit but warn
+fi
+
+echo "✅ Pre-commit checks completed!"

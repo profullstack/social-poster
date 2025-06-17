@@ -258,12 +258,12 @@ export class LinkedInPlatform extends BrowserAutomation {
       await Promise.race([
         // Wait for URL to contain activity ID
         page.waitForFunction(
-          () => window.location.href.includes('urn:li:activity:'),
+          () => globalThis.window.location.href.includes('urn:li:activity:'),
           { timeout }
         ),
         // Or wait for success message/redirect to feed
         page.waitForFunction(
-          () => window.location.href.includes('/feed/') && !window.location.href.includes('update'),
+          () => globalThis.window.location.href.includes('/feed/') && !globalThis.window.location.href.includes('update'),
           { timeout }
         )
       ]);
@@ -279,7 +279,7 @@ export class LinkedInPlatform extends BrowserAutomation {
    * @param {object} [options] - Login options
    * @returns {Promise<boolean>} True if login successful
    */
-  async login(options = {}) {
+  async login(_options = {}) {
     const page = await this.createPage(this.platformName);
 
     try {
@@ -301,7 +301,7 @@ export class LinkedInPlatform extends BrowserAutomation {
 
       // Wait for user to complete login manually
       await page.waitForFunction(
-        () => !window.location.href.includes('/login') && !window.location.href.includes('/uas/login'),
+        () => !globalThis.window.location.href.includes('/login') && !globalThis.window.location.href.includes('/uas/login'),
         { timeout: 300000 } // 5 minutes
       );
 
