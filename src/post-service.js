@@ -6,6 +6,11 @@
 import { SessionManager } from './browser-automation.js';
 import { XPlatform } from './platforms/x-com.js';
 import { LinkedInPlatform } from './platforms/linkedin.js';
+import { RedditPlatform } from './platforms/reddit.js';
+import { HackerNewsPlatform } from './platforms/hacker-news.js';
+import { StackerNewsPlatform } from './platforms/stacker-news.js';
+import { PrimalPlatform } from './platforms/primal.js';
+import { FacebookPlatform } from './platforms/facebook.js';
 
 /**
  * Post Service class for managing multi-platform posting
@@ -23,6 +28,11 @@ export class PostService {
     this.platforms = options.platforms || {
       x: new XPlatform(options.platformOptions?.x),
       linkedin: new LinkedInPlatform(options.platformOptions?.linkedin),
+      reddit: new RedditPlatform(options.platformOptions?.reddit),
+      'hacker-news': new HackerNewsPlatform(options.platformOptions?.['hacker-news']),
+      'stacker-news': new StackerNewsPlatform(options.platformOptions?.['stacker-news']),
+      primal: new PrimalPlatform(options.platformOptions?.primal),
+      facebook: new FacebookPlatform(options.platformOptions?.facebook),
     };
 
     // Initialize session manager

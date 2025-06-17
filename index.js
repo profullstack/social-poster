@@ -35,13 +35,11 @@ export {
 // Platform implementations
 export { XPlatform } from './src/platforms/x-com.js';
 export { LinkedInPlatform } from './src/platforms/linkedin.js';
-
-// Platform implementations (to be created)
-// export { RedditPlatform } from './src/platforms/reddit.js';
-// export { StackerNewsPlatform } from './src/platforms/stacker-news.js';
-// export { PrimalPlatform } from './src/platforms/primal.js';
-// export { FacebookPlatform } from './src/platforms/facebook.js';
-// export { HackerNewsPlatform } from './src/platforms/hacker-news.js';
+export { RedditPlatform } from './src/platforms/reddit.js';
+export { StackerNewsPlatform } from './src/platforms/stacker-news.js';
+export { PrimalPlatform } from './src/platforms/primal.js';
+export { FacebookPlatform } from './src/platforms/facebook.js';
+export { HackerNewsPlatform } from './src/platforms/hacker-news.js';
 
 /**
  * Social Media Poster class - Main orchestrator
@@ -61,6 +59,11 @@ export class SocialPoster {
       platformOptions: {
         x: { headless: this.options.headless, timeout: this.options.timeout },
         linkedin: { headless: this.options.headless, timeout: this.options.timeout },
+        reddit: { headless: this.options.headless, timeout: this.options.timeout },
+        'hacker-news': { headless: this.options.headless, timeout: this.options.timeout },
+        'stacker-news': { headless: this.options.headless, timeout: this.options.timeout },
+        primal: { headless: this.options.headless, timeout: this.options.timeout },
+        facebook: { headless: this.options.headless, timeout: this.options.timeout },
       },
       sessionsPath: this.options.sessionsPath,
     });
@@ -107,7 +110,7 @@ export class SocialPoster {
   getAuthStatus() {
     const platformStatus = this.postService.getPlatformStatus();
     const status = {};
-    const platforms = ['x', 'linkedin', 'reddit', 'stackerNews', 'primal', 'facebook', 'hackerNews'];
+    const platforms = ['x', 'linkedin', 'reddit', 'hacker-news', 'stacker-news', 'primal', 'facebook'];
 
     for (const platform of platforms) {
       status[platform] = {

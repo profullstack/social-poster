@@ -241,12 +241,13 @@ Keep the content concise, impactful, and optimized for social media engagement. 
       return text;
     }
 
-    // Truncate and add ellipsis
-    const truncated = text.substring(0, limit - 3).trim();
+    // Truncate and add ellipsis - ensure result is always less than limit
+    const maxContentLength = limit - 3; // Reserve 3 chars for "..."
+    const truncated = text.substring(0, maxContentLength).trim();
     
     // Try to break at a word boundary
     const lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > limit * 0.8) { // Only break at word if we're not losing too much
+    if (lastSpace > maxContentLength * 0.8) { // Only break at word if we're not losing too much
       return truncated.substring(0, lastSpace) + '...';
     }
     

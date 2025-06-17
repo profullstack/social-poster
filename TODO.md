@@ -48,34 +48,34 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - [ ] Add support for company page posting
 
 ### Reddit
-- [ ] Implement Reddit authentication (OAuth 2.0)
-- [ ] Create posting service for Reddit submissions
-- [ ] Add subreddit targeting
-- [ ] Handle Reddit API rate limits
+- [x] Implement Reddit authentication (Puppeteer-based)
+- [x] Create posting service for Reddit submissions
+- [x] Add subreddit targeting
+- [x] Handle Reddit posting requirements
 
 ### Stacker.news
-- [ ] Research Stacker.news API/authentication
-- [ ] Implement authentication flow
-- [ ] Create posting service
-- [ ] Handle platform-specific requirements
+- [x] Research Stacker.news API/authentication
+- [x] Implement authentication flow (Lightning/Email/GitHub)
+- [x] Create posting service
+- [x] Handle platform-specific requirements
 
 ### Primal.net
-- [ ] Research Primal.net API/authentication
-- [ ] Implement authentication flow
-- [ ] Create posting service
-- [ ] Handle Nostr protocol requirements
+- [x] Research Primal.net API/authentication (Nostr protocol)
+- [x] Implement authentication flow (Private key based)
+- [x] Create posting service
+- [x] Handle Nostr protocol requirements
 
 ### Facebook
-- [ ] Implement Facebook authentication (OAuth 2.0)
-- [ ] Create posting service for Facebook posts
+- [x] Implement Facebook authentication (Puppeteer-based)
+- [x] Create posting service for Facebook posts
+- [x] Handle Facebook posting requirements
 - [ ] Add support for Facebook pages
-- [ ] Handle Facebook API rate limits
 
 ### Hacker News
-- [ ] Research Hacker News API/authentication
-- [ ] Implement authentication flow
-- [ ] Create posting service for submissions
-- [ ] Handle platform-specific requirements
+- [x] Research Hacker News API/authentication
+- [x] Implement authentication flow (Puppeteer-based)
+- [x] Create posting service for submissions
+- [x] Handle platform-specific requirements
 
 ## Phase 4: CLI Commands
 - [ ] `setup` - Interactive setup for all platforms

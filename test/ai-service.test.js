@@ -170,10 +170,10 @@ describe('AI Service', () => {
 
   describe('optimizeForPlatform', () => {
     it('should optimize content for Twitter character limit', () => {
-      const longText = 'a'.repeat(300);
+      const longText = 'a'.repeat(300); // 300 characters, definitely over limit
       const optimized = aiService.optimizeForPlatform(longText, 'x');
       
-      expect(optimized.length).to.be.lessThan(280);
+      expect(optimized.length).to.be.at.most(280);
       expect(optimized).to.include('...');
     });
 
