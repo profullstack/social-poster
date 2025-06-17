@@ -5,6 +5,7 @@ A powerful CLI tool for posting to multiple social media platforms with Puppetee
 ## Features
 
 - 🚀 **Multi-platform posting**: Support for X (Twitter), LinkedIn, Reddit, Facebook, and more
+- 🤖 **AI-powered content generation**: Generate viral social media posts using OpenAI
 - 🔐 **Browser-based authentication**: Uses Puppeteer to login like a human - no API restrictions
 - 💾 **Session management**: Saves login sessions to avoid repeated authentication
 - 📝 **Text and link posts**: Support for both text-only and link sharing posts
@@ -24,7 +25,13 @@ npm install -g @profullstack/social-poster
 
 ## Quick Start
 
-1. **Login to platforms**:
+1. **Setup AI features** (optional):
+```bash
+# Configure OpenAI API key for AI-powered content generation
+sp setup
+```
+
+2. **Login to platforms**:
 ```bash
 # Login to all platforms
 sp login
@@ -34,10 +41,13 @@ sp login x
 sp login linkedin
 ```
 
-2. **Post content**:
+3. **Post content**:
 ```bash
 # Post text to all platforms
 sp post "Hello world! 🚀"
+
+# Generate viral content with AI
+sp post --prompt "Write about the future of web development" --link "https://example.com"
 
 # Post with link
 sp post --text "Check out this amazing tool!" --link "https://github.com/profullstack/social-poster"
@@ -46,7 +56,7 @@ sp post --text "Check out this amazing tool!" --link "https://github.com/profull
 sp post "Hello X and LinkedIn!" --platforms x,linkedin
 ```
 
-3. **Check status**:
+4. **Check status**:
 ```bash
 # View authentication status
 sp status
@@ -81,8 +91,22 @@ sp post "Test" --dry-run
 **Options:**
 - `--text, -t`: Text content to post
 - `--link, -l`: Link to share
+- `--prompt`: AI prompt to generate viral social media content
+- `--style`: Content style for AI generation (viral, professional, casual)
 - `--platforms, -p`: Comma-separated list of platforms
 - `--dry-run`: Preview post without actually posting
+
+**AI-Powered Examples:**
+```bash
+# Generate viral content with AI
+sp post --prompt "This post is about Example.com, please write a more elegant viral type post for all socials" --link "https://example.com"
+
+# Generate professional content for LinkedIn
+sp post --prompt "Share insights about remote work productivity" --style professional --platforms linkedin
+
+# Generate casual content for Twitter
+sp post --prompt "Funny observation about developers and coffee" --style casual --platforms x
+```
 
 ### `sp login [platform]`
 
@@ -121,9 +145,23 @@ sp platforms
 sp platforms --details
 ```
 
+### `sp setup`
+
+Configure OpenAI API key and other settings for AI-powered content generation.
+
+```bash
+sp setup
+```
+
+This interactive command will:
+- Prompt for your OpenAI API key
+- Test the API key connection
+- Configure AI model preferences
+- Set creativity level (temperature)
+
 ### `sp config`
 
-Show current configuration.
+Show current configuration including AI settings.
 
 ```bash
 sp config
@@ -163,9 +201,32 @@ Configuration is stored in `~/.config/social-poster/config.json`:
     "timeout": 30000,
     "logLevel": "info",
     "headless": true
+  },
+  "ai": {
+    "openaiApiKey": "sk-...",
+    "model": "gpt-4o-mini",
+    "maxTokens": 500,
+    "temperature": 0.7,
+    "enabled": true
   }
 }
 ```
+
+### AI Configuration
+
+To use AI-powered content generation, you need an OpenAI API key:
+
+1. **Get an API key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. **Run setup**: `sp setup`
+3. **Configure settings**:
+   - **Model**: Choose between `gpt-4o-mini` (fast, cost-effective), `gpt-4o` (more capable), or `gpt-3.5-turbo` (legacy)
+   - **Temperature**: Control creativity (0.3 = conservative, 0.7 = balanced, 1.0 = creative)
+   - **Max tokens**: Limit response length (default: 500)
+
+**Content Styles:**
+- `viral`: Attention-grabbing, shareable content with emojis and trending language
+- `professional`: Business-appropriate, authoritative content for LinkedIn
+- `casual`: Conversational, relatable content for Twitter/X and casual platforms
 
 ## Session Management
 
@@ -249,12 +310,17 @@ social-poster/
 ├── src/
 │   ├── config-manager.js    # Configuration management
 │   ├── browser-automation.js # Puppeteer automation
+│   ├── ai-service.js        # AI-powered content generation
+│   ├── post-service.js      # Multi-platform posting orchestration
 │   └── platforms/           # Platform implementations
 │       ├── x-com.js
 │       ├── linkedin.js
 │       └── ...
 ├── test/                    # Test files
 ├── examples/                # Usage examples
+│   ├── basic-usage.js
+│   ├── ai-content-generation.js
+│   └── batch-posting.js
 └── index.js                 # Main module export
 ```
 

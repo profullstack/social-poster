@@ -62,12 +62,14 @@
     "cli-progress": "^3.12.0",
     "dotenv": "^16.4.5",
     "inquirer": "^12.6.3",
+    "openai": "^4.67.3",
     "puppeteer": "^23.9.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
     "chai": "^4.3.7",
     "eslint": "^8.57.0",
+    "esmock": "^2.7.0",
     "mocha": "^10.2.0",
     "prettier": "^3.0.0",
     "sinon": "^17.0.1"

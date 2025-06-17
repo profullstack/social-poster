@@ -193,3 +193,132 @@ describe('LinkedIn Platform', () => {
 
     it('should handle text that is too long', async () => {
       const content = {
+        text: 'a'.repeat(4000), // Longer than LinkedIn's limit
+        type: 'text',
+      };
+
+      const result = await linkedInPlatform.postText(mockPage, content);
+      
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('Text is too long');
+    });
+  });
+
+  describe('postLink', () => {
+    it('should post link with text', async () => {
+      const content = {
+        text: 'Check out this amazing website!',
+        link: 'https://example.com',
+        type: 'link',
+      };
+
+      mockPage.waitForSelector.resolves({});
+      mockPage.type.resolves();
+      mockPage.click.resolves();
+      mockPage.waitForNavigation.resolves();
+      mockPage.url.returns('https://www.linkedin.com/feed/update/urn:li:activity:123456789/');
+
+      const result = await linkedInPlatform.postLink(mockPage, content);
+      
+      expect(result.success).to.be.true;
+      expect(result.postId).to.equal('123456789');
+      
+      const expectedText = `${content.text}\n\n${content.link}`;
+      expect(mockPage.type.calledWith('.ql-editor', expectedText)).to.be.true;
+    });
+
+    it('should post link without text', async () => {
+      const content = {
+        link: 'https://example.com',
+        type: 'link',
+      };
+
+      mockPage.waitForSelector.resolves({});
+      mockPage.type.resolves();
+      mockPage.click.resolves();
+      mockPage.waitForNavigation.resolves();
+      mockPage.url.returns('https://www.linkedin.com/feed/update/urn:li:activity:123456789/');
+
+      const result = await linkedInPlatform.postLink(mockPage, content);
+      
+      expect(result.success).to.be.true;
+      expect(mockPage.type.calledWith('.ql-editor', content.link)).to.be.true;
+    });
+  });
+
+  describe('extractPostId', () => {
+    it('should extract post ID from LinkedIn URL', () => {
+      const url = 'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/';
+      const postId = linkedInPlatform.extractPostId(url);
+      
+      expect(postId).to.equal('1234567890123456789');
+    });
+
+    it('should return null for invalid URL', () => {
+      const url = 'https://www.linkedin.com/feed/';
+      const postId = linkedInPlatform.extractPostId(url);
+      
+      expect(postId).to.be.null;
+    });
+  });
+
+  describe('waitForPostToLoad', () => {
+    it('should wait for post to be published', async () => {
+      mockPage.waitForSelector.resolves({});
+      mockPage.url.returns('https://www.linkedin.com/feed/update/urn:li:activity:123456789/');
+
+      const result = await linkedInPlatform.waitForPostToLoad(mockPage);
+      
+      expect(result).to.be.true;
+    });
+
+    it('should timeout if post does not load', async () => {
+      mockPage.waitForSelector.rejects(new Error('Timeout'));
+      mockPage.url.returns('https://www.linkedin.com/feed/');
+
+      const result = await linkedInPlatform.waitForPostToLoad(mockPage);
+      
+      expect(result).to.be.false;
+    });
+  });
+
+  describe('post', () => {
+    it('should handle complete posting flow for text', async () => {
+      const content = {
+        text: 'Hello LinkedIn!',
+        type: 'text',
+      };
+
+      // Mock the entire flow
+      sandbox.stub(linkedInPlatform, 'createPage').resolves(mockPage);
+      sandbox.stub(linkedInPlatform, 'isLoggedIn').resolves(true);
+      sandbox.stub(linkedInPlatform, 'navigateToCompose').resolves();
+      sandbox.stub(linkedInPlatform, 'postText').resolves({
+        success: true,
+        postId: '123456789',
+      });
+      sandbox.stub(linkedInPlatform, 'saveSession').resolves();
+
+      const result = await linkedInPlatform.post(content);
+      
+      expect(result.success).to.be.true;
+      expect(result.postId).to.equal('123456789');
+    });
+
+    it('should handle login requirement', async () => {
+      const content = {
+        text: 'Hello LinkedIn!',
+        type: 'text',
+      };
+
+      sandbox.stub(linkedInPlatform, 'createPage').resolves(mockPage);
+      sandbox.stub(linkedInPlatform, 'isLoggedIn').resolves(false);
+      sandbox.stub(linkedInPlatform, 'login').resolves(false);
+
+      const result = await linkedInPlatform.post(content);
+      
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('Authentication required');
+    });
+  });
+});

@@ -27,14 +27,21 @@ export {
   getSessionsPath,
 } from './src/browser-automation.js';
 
-// Platform implementations (to be created)
+export {
+  PostService,
+  postService,
+} from './src/post-service.js';
+
+// Platform implementations
 export { XPlatform } from './src/platforms/x-com.js';
 export { LinkedInPlatform } from './src/platforms/linkedin.js';
-export { RedditPlatform } from './src/platforms/reddit.js';
-export { StackerNewsPlatform } from './src/platforms/stacker-news.js';
-export { PrimalPlatform } from './src/platforms/primal.js';
-export { FacebookPlatform } from './src/platforms/facebook.js';
-export { HackerNewsPlatform } from './src/platforms/hacker-news.js';
+
+// Platform implementations (to be created)
+// export { RedditPlatform } from './src/platforms/reddit.js';
+// export { StackerNewsPlatform } from './src/platforms/stacker-news.js';
+// export { PrimalPlatform } from './src/platforms/primal.js';
+// export { FacebookPlatform } from './src/platforms/facebook.js';
+// export { HackerNewsPlatform } from './src/platforms/hacker-news.js';
 
 /**
  * Social Media Poster class - Main orchestrator
@@ -50,12 +57,14 @@ export class SocialPoster {
     };
 
     this.config = loadConfig(this.options.configPath);
-    this.browserAutomation = new BrowserAutomation({
-      headless: this.options.headless,
-      timeout: this.options.timeout,
+    this.postService = new PostService({
+      platformOptions: {
+        x: { headless: this.options.headless, timeout: this.options.timeout },
+        linkedin: { headless: this.options.headless, timeout: this.options.timeout },
+      },
       sessionsPath: this.options.sessionsPath,
     });
-    this.sessionManager = this.browserAutomation.sessionManager;
+    this.sessionManager = this.postService.sessionManager;
   }
 
   /**
@@ -66,7 +75,7 @@ export class SocialPoster {
    */
   async login(platform, options = {}) {
     try {
-      return await this.browserAutomation.login(platform, options);
+      return await this.postService.loginToPlatform(platform, options);
     } catch (error) {
       console.error(`Login failed for ${platform}: ${error.message}`);
       return false;
@@ -80,22 +89,7 @@ export class SocialPoster {
    * @returns {Promise<object>} Post results
    */
   async post(content, platforms = null) {
-    const targetPlatforms = platforms || getReadyPlatforms(this.config);
-    const results = {};
-
-    for (const platform of targetPlatforms) {
-      try {
-        const result = await this.browserAutomation.post(platform, content);
-        results[platform] = { success: true, ...result };
-      } catch (error) {
-        results[platform] = { success: false, error: error.message };
-      }
-    }
-
-    return {
-      success: Object.values(results).some(r => r.success),
-      results,
-    };
+    return await this.postService.post(content, platforms);
   }
 
   /**
@@ -103,7 +97,7 @@ export class SocialPoster {
    * @returns {string[]} Array of platform names
    */
   getAvailablePlatforms() {
-    return getReadyPlatforms(this.config);
+    return this.postService.getAvailablePlatforms();
   }
 
   /**
@@ -111,14 +105,16 @@ export class SocialPoster {
    * @returns {object} Status for each platform
    */
   getAuthStatus() {
+    const platformStatus = this.postService.getPlatformStatus();
     const status = {};
     const platforms = ['x', 'linkedin', 'reddit', 'stackerNews', 'primal', 'facebook', 'hackerNews'];
 
     for (const platform of platforms) {
       status[platform] = {
-        enabled: this.config.platforms[platform]?.enabled ?? false,
-        loggedIn: this.sessionManager.isSessionValid(platform),
+        enabled: this.config.platforms?.[platform]?.enabled ?? false,
+        loggedIn: platformStatus[platform]?.loggedIn ?? false,
         displayName: getPlatformDisplayName(platform),
+        available: platformStatus[platform]?.available ?? false,
       };
     }
 
@@ -129,7 +125,7 @@ export class SocialPoster {
    * Close browser and clean up resources
    */
   async close() {
-    await this.browserAutomation.closeBrowser();
+    await this.postService.close();
   }
 }
 
@@ -143,11 +139,6 @@ export async function quickPost(content, options = {}) {
   const poster = new SocialPoster(options);
 
   try {
-    const validation = validatePostContent(content);
-    if (!validation.valid) {
-      throw new Error(`Invalid content: ${validation.errors.join(', ')}`);
-    }
-
     return await poster.post(content, options.platforms);
   } finally {
     await poster.close();
@@ -160,37 +151,8 @@ export async function quickPost(content, options = {}) {
  * @returns {object} Validation result
  */
 export function validatePostContent(content) {
-  const errors = [];
-
-  if (!content || typeof content !== 'object') {
-    errors.push('Content must be an object');
-    return { valid: false, errors };
-  }
-
-  if (!content.text && !content.link) {
-    errors.push('Content must have either text or link');
-  }
-
-  if (content.text && typeof content.text !== 'string') {
-    errors.push('Text must be a string');
-  }
-
-  if (content.link) {
-    try {
-      new URL(content.link);
-    } catch {
-      errors.push('Link must be a valid URL');
-    }
-  }
-
-  if (content.text && content.text.length > 280) {
-    errors.push('Text is too long (maximum 280 characters)');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  const postService = new PostService();
+  return postService.validateContent(content);
 }
 
 /**

@@ -83,6 +83,13 @@ export function getDefaultConfig() {
       logLevel: 'info',
       rateLimitDelay: 1000,
     },
+    ai: {
+      openaiApiKey: '',
+      model: 'gpt-4o-mini',
+      maxTokens: 500,
+      temperature: 0.7,
+      enabled: false,
+    },
   };
 }
 
@@ -171,6 +178,35 @@ export function validateConfig(config) {
       if (!Number.isInteger(rateLimitDelay) || rateLimitDelay < 0) {
         errors.push('Rate limit delay must be a non-negative integer');
       }
+    }
+  }
+
+  // Validate AI settings
+  if (config.ai) {
+    const { openaiApiKey, model, maxTokens, temperature, enabled } = config.ai;
+
+    if (enabled && !openaiApiKey?.trim()) {
+      errors.push('AI is enabled but OpenAI API key is missing');
+    }
+
+    if (openaiApiKey && !validateOpenAIApiKey(openaiApiKey)) {
+      errors.push('OpenAI API key format is invalid (should start with "sk-")');
+    }
+
+    if (maxTokens !== undefined) {
+      if (!Number.isInteger(maxTokens) || maxTokens <= 0 || maxTokens > 4096) {
+        errors.push('Max tokens must be a positive integer between 1 and 4096');
+      }
+    }
+
+    if (temperature !== undefined) {
+      if (typeof temperature !== 'number' || temperature < 0 || temperature > 2) {
+        errors.push('Temperature must be a number between 0 and 2');
+      }
+    }
+
+    if (model !== undefined && typeof model !== 'string') {
+      errors.push('Model must be a string');
     }
   }
 
@@ -334,4 +370,50 @@ export function getPlatformDisplayName(platformName) {
   };
 
   return displayNames[platformName] || platformName;
+}
+
+/**
+ * Validate OpenAI API key format
+ * @param {string} apiKey - API key to validate
+ * @returns {boolean} True if valid format
+ */
+export function validateOpenAIApiKey(apiKey) {
+  if (!apiKey || typeof apiKey !== 'string') {
+    return false;
+  }
+  
+  // OpenAI API keys start with 'sk-' and are followed by alphanumeric characters
+  return /^sk-[a-zA-Z0-9]+$/.test(apiKey);
+}
+
+/**
+ * Check if AI is enabled and properly configured
+ * @param {object} config - Configuration object
+ * @returns {boolean} True if AI is ready to use
+ */
+export function isAIReady(config) {
+  const ai = config?.ai;
+  if (!ai?.enabled) {
+    return false;
+  }
+
+  return !!(ai.openaiApiKey?.trim() && validateOpenAIApiKey(ai.openaiApiKey));
+}
+
+/**
+ * Get AI configuration
+ * @param {object} config - Configuration object
+ * @returns {object|null} AI configuration or null if not available
+ */
+export function getAIConfig(config) {
+  if (!isAIReady(config)) {
+    return null;
+  }
+
+  return {
+    apiKey: config.ai.openaiApiKey,
+    model: config.ai.model || 'gpt-4o-mini',
+    maxTokens: config.ai.maxTokens || 500,
+    temperature: config.ai.temperature || 0.7,
+  };
 }
