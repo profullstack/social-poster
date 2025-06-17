@@ -21,6 +21,7 @@ import { loadConfig, saveConfig, getConfigPath, getPlatformDisplayName, getAICon
 import { BrowserAutomation, SessionManager } from '../src/browser-automation.js';
 import { PostService } from '../src/post-service.js';
 import { initializeAIService } from '../src/ai-service.js';
+import { SetupWizard } from '../src/setup-wizard.js';
 
 /**
  * Parse post content from command line arguments
@@ -533,148 +534,11 @@ async function handleConfigCommand(argv) {
  */
 async function handleSetupCommand(argv) {
   try {
-    console.log(colors.green('🔧 Social Poster Setup'));
-    console.log('');
-
     const configPath = argv.configPath || getConfigPath();
-    let config = loadConfig(configPath);
-
-    // Create readline interface for user input
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    // Helper function to ask questions
-    const askQuestion = (question) => {
-      return new Promise((resolve) => {
-        rl.question(question, (answer) => {
-          resolve(answer.trim());
-        });
-      });
-    };
-
-    try {
-      // Check current AI configuration
-      const currentApiKey = config.ai?.openaiApiKey;
-      if (currentApiKey) {
-        console.log(colors.yellow('🤖 AI Configuration:'));
-        console.log(`   OpenAI API Key: ${currentApiKey.substring(0, 7)}...${currentApiKey.substring(currentApiKey.length - 4)}`);
-        console.log(`   Model: ${config.ai.model}`);
-        console.log(`   Enabled: ${config.ai.enabled ? colors.green('Yes') : colors.red('No')}`);
-        console.log('');
-
-        const updateAI = await askQuestion('Do you want to update the AI configuration? (y/N): ');
-        if (updateAI.toLowerCase() !== 'y' && updateAI.toLowerCase() !== 'yes') {
-          console.log(colors.green('✅ Setup completed - no changes made'));
-          rl.close();
-          return;
-        }
-      } else {
-        console.log(colors.yellow('🤖 AI Configuration Setup'));
-        console.log('   Configure OpenAI API key to enable AI-powered content generation.');
-        console.log('   You can get an API key from: https://platform.openai.com/api-keys');
-        console.log('');
-      }
-
-      // Get OpenAI API key
-      const apiKey = await askQuestion('Enter your OpenAI API key (sk-...): ');
-      
-      if (!apiKey) {
-        console.log(colors.yellow('⚠️  No API key provided. AI features will be disabled.'));
-        config.ai.enabled = false;
-        config.ai.openaiApiKey = '';
-      } else {
-        // Validate API key format
-        if (!apiKey.startsWith('sk-')) {
-          console.log(colors.red('❌ Invalid API key format. OpenAI API keys should start with "sk-"'));
-          rl.close();
-          process.exit(1);
-        }
-
-        // Test the API key
-        console.log(colors.yellow('🧪 Testing API key...'));
-        try {
-          const { initializeAIService } = await import('../src/ai-service.js');
-          const aiService = initializeAIService(apiKey);
-          const isValid = await aiService.testConnection();
-          
-          if (!isValid) {
-            console.log(colors.red('❌ API key test failed. Please check your key and try again.'));
-            rl.close();
-            process.exit(1);
-          }
-          
-          console.log(colors.green('✅ API key is valid!'));
-        } catch (error) {
-          console.log(colors.red(`❌ API key test failed: ${error.message}`));
-          rl.close();
-          process.exit(1);
-        }
-
-        // Configure AI settings
-        config.ai.openaiApiKey = apiKey;
-        config.ai.enabled = true;
-
-        // Ask for model preference
-        console.log('');
-        console.log('Available models:');
-        console.log('  1. gpt-4o-mini (recommended, fast and cost-effective)');
-        console.log('  2. gpt-4o (more capable, higher cost)');
-        console.log('  3. gpt-3.5-turbo (legacy, lowest cost)');
-        
-        const modelChoice = await askQuestion('Choose model (1-3) [1]: ') || '1';
-        
-        const models = {
-          '1': 'gpt-4o-mini',
-          '2': 'gpt-4o',
-          '3': 'gpt-3.5-turbo'
-        };
-        
-        config.ai.model = models[modelChoice] || 'gpt-4o-mini';
-
-        // Ask for temperature setting
-        console.log('');
-        console.log('Content creativity level:');
-        console.log('  1. Conservative (0.3) - More predictable content');
-        console.log('  2. Balanced (0.7) - Good mix of creativity and consistency');
-        console.log('  3. Creative (1.0) - More varied and creative content');
-        
-        const tempChoice = await askQuestion('Choose creativity level (1-3) [2]: ') || '2';
-        
-        const temperatures = {
-          '1': 0.3,
-          '2': 0.7,
-          '3': 1.0
-        };
-        
-        config.ai.temperature = temperatures[tempChoice] || 0.7;
-      }
-
-      // Save configuration
-      const saveResult = saveConfig(config, configPath);
-      if (!saveResult.success) {
-        console.log(colors.red(`❌ Failed to save configuration: ${saveResult.error}`));
-        rl.close();
-        process.exit(1);
-      }
-
-      console.log('');
-      console.log(colors.green('✅ Setup completed successfully!'));
-      console.log('');
-      
-      if (config.ai.enabled) {
-        console.log(colors.cyan('🎉 AI features are now enabled!'));
-        console.log('   You can now use the --prompt option to generate viral content:');
-        console.log(colors.gray('   social-poster post --prompt "Write about my awesome new project" --link "https://example.com"'));
-      } else {
-        console.log(colors.yellow('ℹ️  AI features are disabled. You can run setup again to enable them.'));
-      }
-
-    } finally {
-      rl.close();
-    }
-
+    const setupWizard = new SetupWizard(configPath);
+    
+    await setupWizard.run();
+    
   } catch (error) {
     console.error(colors.red('❌ Setup failed:'), error.message);
     if (argv.verbose) {

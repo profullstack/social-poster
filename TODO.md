@@ -78,7 +78,7 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - [x] Handle platform-specific requirements
 
 ## Phase 4: CLI Commands
-- [ ] `setup` - Interactive setup for all platforms
+- [x] `setup` - Interactive setup for all platforms
 - [x] `login [platform]` - Login with Puppeteer (all platforms or specific)
 - [x] `status` - Show authentication status for all platforms
 - [x] `post <text>` - Post text to all configured platforms
@@ -137,6 +137,7 @@ Create a CLI tool similar to lead-generator that supports authentication and pos
 - ✅ **sp status**: Authentication status checking
 - ✅ **sp platforms**: Platform information and features
 - ✅ **sp config**: Configuration display
+- ✅ **sp setup**: Interactive setup wizard for all platforms and settings
 
 ### Advanced Features
 - ✅ **Multi-platform Posting**: Concurrent posting to multiple platforms
