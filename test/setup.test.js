@@ -45,7 +45,10 @@ describe('Setup Command', () => {
     const module = await esmock('../src/setup-wizard.js', {
       inquirer: mockInquirer,
       '../src/config-manager.js': mockConfigManager,
-      '../src/post-service.js': { PostService() { return mockPostService; } },
+      '../src/post-service.js': {
+        PostService: function() { return mockPostService; },
+        default: function() { return mockPostService; }
+      },
     });
     SetupWizard = module.SetupWizard;
 
