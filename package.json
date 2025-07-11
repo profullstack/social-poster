@@ -34,6 +34,8 @@
     "platforms": "./bin/social-poster.js platforms",
     "lint": "eslint src/ test/ bin/ --fix",
     "format": "prettier --write src/ test/ bin/ examples/",
+    "validate-selectors": "node scripts/validate-selectors.js",
+    "record-selectors": "node scripts/record-selectors.js",
     "prepare": "husky"
   },
   "bin": {

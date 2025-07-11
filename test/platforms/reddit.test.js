@@ -113,17 +113,18 @@ describe('Reddit Platform', () => {
       };
 
       mockPage.waitForSelector.resolves();
-      mockPage.click.resolves();
-      mockPage.type.resolves();
+      redditPlatform.typeText = sandbox.stub().resolves();
+      redditPlatform.clickElement = sandbox.stub().resolves();
+      redditPlatform.isLoggedIn = sandbox.stub().resolves(true);
       mockPage.waitForNavigation.resolves();
 
-      console.log('Starting Reddit login process...');
-      await redditPlatform.performLogin(mockPage, credentials);
+      const result = await redditPlatform.performLogin(mockPage, credentials);
 
       expect(mockPage.waitForSelector).to.have.been.calledWith('#loginUsername');
-      expect(mockPage.type).to.have.been.calledWith('#loginUsername', credentials.username);
-      expect(mockPage.type).to.have.been.calledWith('#loginPassword', credentials.password);
-      expect(mockPage.click).to.have.been.calledWith('button[type="submit"]');
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '#loginUsername', credentials.username);
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '#loginPassword', credentials.password);
+      expect(redditPlatform.clickElement).to.have.been.calledWith(mockPage, 'button[type="submit"]');
+      expect(result).to.be.true;
     });
 
     it('should handle login errors', async () => {
@@ -134,13 +135,8 @@ describe('Reddit Platform', () => {
 
       mockPage.waitForSelector.rejects(new Error('Element not found'));
 
-      console.log('Starting Reddit login process...');
-      try {
-        await redditPlatform.performLogin(mockPage, credentials);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Reddit login failed');
-      }
+      const result = await redditPlatform.performLogin(mockPage, credentials);
+      expect(result).to.be.false;
     });
   });
 
@@ -169,15 +165,19 @@ describe('Reddit Platform', () => {
       };
 
       mockPage.waitForSelector.resolves();
-      mockPage.click.resolves();
-      mockPage.type.resolves();
-      mockPage.evaluate.resolves();
+      redditPlatform.clickElement = sandbox.stub().resolves();
+      redditPlatform.typeText = sandbox.stub().resolves();
+      redditPlatform.waitForPostToLoad = sandbox.stub().resolves(true);
+      redditPlatform.extractPostId = sandbox.stub().returns('abc123');
+      mockPage.url.returns('https://www.reddit.com/r/test/comments/abc123/test_post/');
       mockPage.$.resolves({ click: sandbox.stub() }); // Mock text post button
 
-      await redditPlatform.postText(mockPage, content);
+      const result = await redditPlatform.postText(mockPage, content);
 
-      expect(mockPage.type).to.have.been.calledWith('[name="title"]', content.title);
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '[name="title"]', content.title);
       expect(mockPage.$).to.have.been.calledWith('[data-name="post"]');
+      expect(result.success).to.be.true;
+      expect(result.postId).to.equal('abc123');
     });
 
     it('should handle posting errors', async () => {
@@ -189,12 +189,9 @@ describe('Reddit Platform', () => {
 
       mockPage.waitForSelector.rejects(new Error('Element not found'));
 
-      try {
-        await redditPlatform.postText(mockPage, content);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Failed to post to Reddit');
-      }
+      const result = await redditPlatform.postText(mockPage, content);
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('Failed to post text');
     });
 
     it('should handle text that is too long', async () => {
@@ -204,12 +201,9 @@ describe('Reddit Platform', () => {
         title: 'Test',
       };
 
-      try {
-        await redditPlatform.postText(mockPage, content);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Text is too long');
-      }
+      const result = await redditPlatform.postText(mockPage, content);
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('Text is too long');
     });
   });
 
@@ -222,15 +216,19 @@ describe('Reddit Platform', () => {
       };
 
       mockPage.waitForSelector.resolves();
-      mockPage.click.resolves();
-      mockPage.type.resolves();
+      redditPlatform.clickElement = sandbox.stub().resolves();
+      redditPlatform.typeText = sandbox.stub().resolves();
+      redditPlatform.waitForPostToLoad = sandbox.stub().resolves(true);
+      redditPlatform.extractPostId = sandbox.stub().returns('abc123');
+      mockPage.url.returns('https://www.reddit.com/r/test/comments/abc123/test_post/');
       mockPage.$.resolves({ click: sandbox.stub() }); // Mock link post button
 
-      await redditPlatform.postLink(mockPage, content);
+      const result = await redditPlatform.postLink(mockPage, content);
 
       expect(mockPage.$).to.have.been.calledWith('[data-name="link"]');
-      expect(mockPage.type).to.have.been.calledWith('[name="title"]', content.title);
-      expect(mockPage.type).to.have.been.calledWith('[name="url"]', content.link);
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '[name="title"]', content.title);
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '[name="url"]', content.link);
+      expect(result.success).to.be.true;
     });
 
     it('should post link without title', async () => {
@@ -240,12 +238,16 @@ describe('Reddit Platform', () => {
       };
 
       mockPage.waitForSelector.resolves();
-      mockPage.click.resolves();
-      mockPage.type.resolves();
+      redditPlatform.clickElement = sandbox.stub().resolves();
+      redditPlatform.typeText = sandbox.stub().resolves();
+      redditPlatform.waitForPostToLoad = sandbox.stub().resolves(true);
+      redditPlatform.extractPostId = sandbox.stub().returns('abc123');
+      mockPage.url.returns('https://www.reddit.com/r/test/comments/abc123/test_post/');
 
-      await redditPlatform.postLink(mockPage, content);
+      const result = await redditPlatform.postLink(mockPage, content);
 
-      expect(mockPage.type).to.have.been.calledWith('[name="url"]', content.link);
+      expect(redditPlatform.typeText).to.have.been.calledWith(mockPage, '[name="url"]', content.link);
+      expect(result.success).to.be.true;
     });
   });
 
@@ -295,15 +297,18 @@ describe('Reddit Platform', () => {
         type: 'text',
       };
 
+      // Mock the createPage method and page interactions
+      redditPlatform.createPage = sandbox.stub().resolves(mockPage);
+      mockPage.goto = sandbox.stub().resolves();
+      mockPage.close = sandbox.stub().resolves();
+      
       // Mock successful login check
       redditPlatform.isLoggedIn = sandbox.stub().resolves(true);
       redditPlatform.navigateToSubmit = sandbox.stub().resolves();
-      redditPlatform.postText = sandbox.stub().resolves();
-      redditPlatform.waitForPostToLoad = sandbox.stub().resolves(true);
-      redditPlatform.extractPostId = sandbox.stub().returns('abc123');
-      mockPage.url.returns('https://www.reddit.com/r/test/comments/abc123/test_post/');
+      redditPlatform.postText = sandbox.stub().resolves({ success: true, postId: 'abc123', url: 'https://reddit.com/test' });
+      redditPlatform.saveSession = sandbox.stub().resolves();
 
-      const result = await redditPlatform.post(mockPage, content);
+      const result = await redditPlatform.post(content);
 
       expect(result.success).to.be.true;
       expect(result.postId).to.equal('abc123');
@@ -317,13 +322,18 @@ describe('Reddit Platform', () => {
         type: 'text',
       };
 
+      // Mock the createPage method and page interactions
+      redditPlatform.createPage = sandbox.stub().resolves(mockPage);
+      mockPage.goto = sandbox.stub().resolves();
+      mockPage.close = sandbox.stub().resolves();
+
       // Mock not logged in
       redditPlatform.isLoggedIn = sandbox.stub().resolves(false);
 
-      const result = await redditPlatform.post(mockPage, content);
+      const result = await redditPlatform.post(content);
 
       expect(result.success).to.be.false;
-      expect(result.error).to.include('authentication required');
+      expect(result.error).to.include('Authentication required');
     });
   });
 });

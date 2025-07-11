@@ -3,16 +3,17 @@
  * Handles authentication and posting to Reddit using Puppeteer
  */
 
-export class RedditPlatform {
+import { BrowserAutomation } from '../browser-automation.js';
+
+/**
+ * Reddit Platform class for handling Reddit interactions
+ */
+export class RedditPlatform extends BrowserAutomation {
   constructor(options = {}) {
-    this.options = {
-      headless: true,
-      timeout: 30000,
-      ...options,
-    };
-    this.name = 'reddit';
-    this.displayName = 'Reddit';
+    super(options);
+    this.platformName = 'reddit';
     this.baseUrl = 'https://www.reddit.com';
+    this.loginUrl = 'https://www.reddit.com/login';
     this.maxTextLength = 40000; // Reddit's character limit for text posts
     this.maxTitleLength = 300; // Reddit's title character limit
   }
@@ -42,47 +43,51 @@ export class RedditPlatform {
   }
 
   /**
-   * Navigate to Reddit login page
+   * Navigate to login page
    * @param {Page} page - Puppeteer page instance
    */
   async navigateToLogin(page) {
-    await page.goto(`${this.baseUrl}/login`, {
-      waitUntil: 'networkidle2',
-      timeout: this.options.timeout,
-    });
+    await page.goto(this.loginUrl, { waitUntil: 'networkidle2' });
   }
 
   /**
    * Perform login with credentials
    * @param {Page} page - Puppeteer page instance
-   * @param {Object} credentials - Login credentials
-   * @param {string} credentials.username - Reddit username
-   * @param {string} credentials.password - Reddit password
+   * @param {object} credentials - Login credentials
+   * @returns {Promise<boolean>} True if login successful
    */
   async performLogin(page, credentials) {
     try {
       console.log('Starting Reddit login process...');
 
       // Wait for login form elements
-      await page.waitForSelector('#loginUsername', { timeout: this.options.timeout });
-      await page.waitForSelector('#loginPassword', { timeout: this.options.timeout });
+      await page.waitForSelector('#loginUsername', { timeout: 10000 });
+      await this.typeText(page, '#loginUsername', credentials.username);
 
-      // Fill in credentials
-      await page.type('#loginUsername', credentials.username);
-      await page.type('#loginPassword', credentials.password);
+      await page.waitForSelector('#loginPassword', { timeout: 10000 });
+      await this.typeText(page, '#loginPassword', credentials.password);
 
       // Submit the form
-      await page.click('button[type="submit"]');
+      await this.clickElement(page, 'button[type="submit"]');
 
       // Wait for navigation after login
-      await page.waitForNavigation({ 
+      await page.waitForNavigation({
         waitUntil: 'networkidle2',
-        timeout: this.options.timeout 
+        timeout: 15000
       });
 
-      console.log('Reddit login completed');
+      // Verify we're logged in
+      const isLoggedIn = await this.isLoggedIn(page);
+      if (isLoggedIn) {
+        console.log('Successfully logged in to Reddit');
+        return true;
+      } else {
+        console.error('Login appeared to succeed but user is not logged in');
+        return false;
+      }
     } catch (error) {
-      throw new Error(`Reddit login failed: ${error.message}`);
+      console.error(`Reddit login failed: ${error.message}`);
+      return false;
     }
   }
 
@@ -92,46 +97,47 @@ export class RedditPlatform {
    * @param {string} subreddit - Optional subreddit name
    */
   async navigateToSubmit(page, subreddit = null) {
-    const submitUrl = subreddit 
+    const submitUrl = subreddit
       ? `${this.baseUrl}/r/${subreddit}/submit`
       : `${this.baseUrl}/submit`;
 
-    await page.goto(submitUrl, {
-      waitUntil: 'networkidle2',
-      timeout: this.options.timeout,
-    });
+    await page.goto(submitUrl, { waitUntil: 'networkidle2' });
   }
 
   /**
    * Post text content to Reddit
    * @param {Page} page - Puppeteer page instance
-   * @param {Object} content - Post content
-   * @param {string} content.text - Post text
-   * @param {string} content.title - Post title
-   * @param {string} content.subreddit - Target subreddit
+   * @param {object} content - Post content
+   * @returns {Promise<object>} Post result
    */
   async postText(page, content) {
     try {
       // Validate content length
       if (content.text && content.text.length > this.maxTextLength) {
-        throw new Error(`Text is too long. Maximum ${this.maxTextLength} characters allowed.`);
+        return {
+          success: false,
+          error: `Text is too long (${content.text.length}/${this.maxTextLength} characters)`,
+        };
       }
 
       if (content.title && content.title.length > this.maxTitleLength) {
-        throw new Error(`Title is too long. Maximum ${this.maxTitleLength} characters allowed.`);
+        return {
+          success: false,
+          error: `Title is too long (${content.title.length}/${this.maxTitleLength} characters)`,
+        };
       }
 
       // Wait for submit form
-      await page.waitForSelector('[name="title"]', { timeout: this.options.timeout });
+      await page.waitForSelector('[name="title"]', { timeout: 10000 });
 
       // Select text post type if available
       const textPostButton = await page.$('[data-name="post"]');
       if (textPostButton) {
-        await page.click('[data-name="post"]');
+        await this.clickElement(page, '[data-name="post"]');
       }
 
       // Fill in title
-      await page.type('[name="title"]', content.title || 'Untitled Post');
+      await this.typeText(page, '[name="title"]', content.title || 'Untitled Post');
 
       // Fill in text content if available
       const textArea = await page.$('textarea[name="text"], .public-DraftEditor-content, [data-testid="textbox"]');
@@ -151,51 +157,83 @@ export class RedditPlatform {
       }
 
       // Submit the post
-      const submitButton = await page.$('button[type="submit"], [data-testid="submit-button"], .submit');
-      if (submitButton) {
-        await submitButton.click();
+      await this.clickElement(page, 'button[type="submit"], [data-testid="submit-button"], .submit');
+
+      // Wait for post to load
+      const posted = await this.waitForPostToLoad(page);
+      if (!posted) {
+        return {
+          success: false,
+          error: 'Post submission timed out',
+        };
       }
 
+      // Extract post ID from URL
+      const postId = this.extractPostId(page.url());
+
+      return {
+        success: true,
+        postId,
+        url: page.url(),
+      };
     } catch (error) {
-      throw new Error(`Failed to post to Reddit: ${error.message}`);
+      return {
+        success: false,
+        error: `Failed to post text: ${error.message}`,
+      };
     }
   }
 
   /**
    * Post link content to Reddit
    * @param {Page} page - Puppeteer page instance
-   * @param {Object} content - Post content
-   * @param {string} content.link - URL to post
-   * @param {string} content.title - Post title
-   * @param {string} content.subreddit - Target subreddit
+   * @param {object} content - Post content
+   * @returns {Promise<object>} Post result
    */
   async postLink(page, content) {
     try {
       // Wait for submit form
-      await page.waitForSelector('[name="title"]', { timeout: this.options.timeout });
+      await page.waitForSelector('[name="title"]', { timeout: 10000 });
 
       // Select link post type
       const linkPostButton = await page.$('[data-name="link"]');
       if (linkPostButton) {
-        await page.click('[data-name="link"]');
+        await this.clickElement(page, '[data-name="link"]');
       }
 
       // Fill in title
       const title = content.title || content.link;
-      await page.type('[name="title"]', title);
+      await this.typeText(page, '[name="title"]', title);
 
       // Fill in URL
-      await page.waitForSelector('[name="url"]', { timeout: this.options.timeout });
-      await page.type('[name="url"]', content.link);
+      await page.waitForSelector('[name="url"]', { timeout: 10000 });
+      await this.typeText(page, '[name="url"]', content.link);
 
       // Submit the post
-      const submitButton = await page.$('button[type="submit"], [data-testid="submit-button"], .submit');
-      if (submitButton) {
-        await submitButton.click();
+      await this.clickElement(page, 'button[type="submit"], [data-testid="submit-button"], .submit');
+
+      // Wait for post to load
+      const posted = await this.waitForPostToLoad(page);
+      if (!posted) {
+        return {
+          success: false,
+          error: 'Post submission timed out',
+        };
       }
 
+      // Extract post ID from URL
+      const postId = this.extractPostId(page.url());
+
+      return {
+        success: true,
+        postId,
+        url: page.url(),
+      };
     } catch (error) {
-      throw new Error(`Failed to post link to Reddit: ${error.message}`);
+      return {
+        success: false,
+        error: `Failed to post link: ${error.message}`,
+      };
     }
   }
 
@@ -212,115 +250,125 @@ export class RedditPlatform {
   /**
    * Wait for post to load after submission
    * @param {Page} page - Puppeteer page instance
-   * @returns {Promise<boolean>} - True if post loaded successfully
+   * @param {number} [timeout=15000] - Timeout in milliseconds
+   * @returns {Promise<boolean>} True if post loaded successfully
    */
-  async waitForPostToLoad(page) {
+  async waitForPostToLoad(page, timeout = 15000) {
     try {
-      // Wait for post content to appear
-      await page.waitForSelector('.Post, [data-testid="post-content"], .thing', {
-        timeout: this.options.timeout,
-      });
+      // Wait for URL to change to a post URL or for success indicator
+      await Promise.race([
+        // Wait for URL to contain comments (indicating successful post)
+        page.waitForFunction(
+          () => globalThis.window.location.href.includes('/comments/'),
+          { timeout }
+        ),
+        // Or wait for post content to appear
+        page.waitForSelector('.Post, [data-testid="post-content"], .thing', { timeout })
+      ]);
       return true;
     } catch (error) {
-      console.log('Post loading timed out:', error.message);
+      console.warn(`Post loading timed out: ${error.message}`);
       return false;
     }
   }
 
   /**
-   * Main posting method
-   * @param {Page} page - Puppeteer page instance
-   * @param {Object} content - Post content
-   * @param {string} content.text - Post text (for text posts)
-   * @param {string} content.link - URL (for link posts)
-   * @param {string} content.title - Post title
-   * @param {string} content.subreddit - Target subreddit
-   * @param {string} content.type - Post type ('text' or 'link')
-   * @returns {Promise<Object>} - Post result
+   * Login to Reddit platform
+   * @param {object} [options] - Login options
+   * @returns {Promise<boolean>} True if login successful
    */
-  async post(page, content) {
+  async login(_options = {}) {
+    const page = await this.createPage(this.platformName);
+
     try {
+      // Check if already logged in
+      await page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
+      
+      if (await this.isLoggedIn(page)) {
+        console.log('Already logged in to Reddit');
+        await this.saveSession(page, this.platformName);
+        return true;
+      }
+
+      // Navigate to login page
+      await this.navigateToLogin(page);
+
+      // For now, we'll wait for manual login
+      console.log('Please log in manually in the browser...');
+      console.log('Waiting for login to complete...');
+
+      // Wait for user to complete login manually
+      await page.waitForFunction(
+        () => !globalThis.window.location.href.includes('/login'),
+        { timeout: 300000 } // 5 minutes
+      );
+
+      // Verify login was successful
+      const isLoggedIn = await this.isLoggedIn(page);
+      if (isLoggedIn) {
+        console.log('Reddit login completed successfully');
+        await this.saveSession(page, this.platformName);
+        return true;
+      } else {
+        console.error('Reddit login verification failed');
+        return false;
+      }
+    } catch (error) {
+      console.error(`Reddit login failed: ${error.message}`);
+      return false;
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * Post content to Reddit
+   * @param {object} content - Content to post
+   * @returns {Promise<object>} Post result
+   */
+  async post(content) {
+    const page = await this.createPage(this.platformName);
+
+    try {
+      // Navigate to Reddit
+      await page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
+
       // Check if logged in
-      const loggedIn = await this.isLoggedIn(page);
-      if (!loggedIn) {
+      if (!(await this.isLoggedIn(page))) {
         return {
           success: false,
-          error: 'Reddit authentication required. Please run "sp login reddit" first.',
-          platform: this.name,
+          error: 'Authentication required. Please run "sp login reddit" first.',
         };
       }
 
       // Navigate to submit page
       await this.navigateToSubmit(page, content.subreddit);
 
-      // Post based on type
+      // Post based on content type
+      let result;
       if (content.type === 'link' || content.link) {
-        await this.postLink(page, content);
+        result = await this.postLink(page, content);
       } else {
-        await this.postText(page, content);
+        result = await this.postText(page, content);
       }
 
-      // Wait for post to load
-      const postLoaded = await this.waitForPostToLoad(page);
-      if (!postLoaded) {
-        return {
-          success: false,
-          error: 'Post submission timed out',
-          platform: this.name,
-        };
+      // Save session after successful interaction
+      if (result.success) {
+        await this.saveSession(page, this.platformName);
       }
 
-      // Extract post ID from URL
-      const currentUrl = page.url();
-      const postId = this.extractPostId(currentUrl);
-
-      return {
-        success: true,
-        postId,
-        url: currentUrl,
-        platform: this.name,
-        message: `Successfully posted to Reddit${content.subreddit ? ` in r/${content.subreddit}` : ''}`,
-      };
-
+      return result;
     } catch (error) {
       return {
         success: false,
-        error: error.message,
-        platform: this.name,
+        error: `Failed to post to Reddit: ${error.message}`,
       };
+    } finally {
+      await page.close();
     }
   }
 
-  /**
-   * Get platform-specific posting requirements
-   * @returns {Object} - Platform requirements and limits
-   */
-  getRequirements() {
-    return {
-      name: this.name,
-      displayName: this.displayName,
-      authType: 'browser',
-      supports: {
-        text: true,
-        links: true,
-        images: false, // Not implemented yet
-        videos: false, // Not implemented yet
-        scheduling: false,
-      },
-      limits: {
-        textLength: this.maxTextLength,
-        titleLength: this.maxTitleLength,
-      },
-      required: ['title'],
-      optional: ['text', 'link', 'subreddit'],
-      notes: [
-        'Requires subreddit selection for posting',
-        'Title is required for all posts',
-        'Text posts support markdown formatting',
-        'Link posts will auto-generate title if not provided',
-      ],
-    };
-  }
 }
 
-export default RedditPlatform;
+// Export default instance
+export const redditPlatform = new RedditPlatform();
