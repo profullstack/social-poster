@@ -4,11 +4,12 @@ A powerful CLI tool for posting to multiple social media platforms with Puppetee
 
 ## Features
 
-- 🚀 **Multi-platform posting**: Support for X (Twitter), LinkedIn, Reddit, Facebook, and more
+- 🚀 **Multi-platform posting**: Support for X (Twitter), TikTok, Pinterest, LinkedIn, Reddit, Facebook, and more
+- 🎬 **Auto recording**: Intelligent selector recording with real-time validation and confidence scoring
 - 🤖 **AI-powered content generation**: Generate viral social media posts using OpenAI
 - 🔐 **Browser-based authentication**: Uses Puppeteer to login like a human - no API restrictions
 - 💾 **Session management**: Saves login sessions to avoid repeated authentication
-- 📝 **Text and link posts**: Support for both text-only and link sharing posts
+- 📝 **Rich content support**: Text posts, link sharing, image uploads, and video uploads
 - 🎯 **Platform targeting**: Post to specific platforms or all at once
 - 🧪 **Dry run mode**: Preview posts without actually posting
 - 📊 **Status monitoring**: Check authentication status across all platforms
@@ -38,6 +39,8 @@ sp login
 
 # Login to specific platform
 sp login x
+sp login tiktok
+sp login pinterest
 sp login linkedin
 ```
 
@@ -167,11 +170,46 @@ Show current configuration including AI settings.
 sp config
 ```
 
+## Auto Recording
+
+Social Poster includes an advanced auto recording system that captures and validates CSS selectors for social media platforms automatically.
+
+### Quick Start
+
+```bash
+# Record selectors for a single platform
+pnpm run auto-record x
+pnpm run auto-record tiktok
+pnpm run auto-record pinterest
+
+# Record selectors for all platforms
+pnpm run auto-record all
+```
+
+### Features
+
+- **Real-time validation**: Automatically validates known selectors every 5 seconds
+- **Confidence scoring**: Rates selector reliability from 0-100%
+- **Enhanced categorization**: Intelligently categorizes UI elements
+- **Visual feedback**: Color-coded element highlighting (green=working, red=broken)
+- **Auto-save**: Saves progress every 3 seconds
+
+### How It Works
+
+1. **Open browser**: Tool opens browser windows for specified platforms
+2. **Manual workflow**: Perform normal login and posting workflows
+3. **Auto capture**: Tool records all interactions and validates selectors
+4. **Save results**: Press Ctrl+C to stop and save results to JSON file
+
+For detailed documentation, see [Auto Recording Guide](docs/AUTO_RECORDING.md).
+
 ## Supported Platforms
 
 | Platform | Status | Features |
 |----------|--------|----------|
-| **X (Twitter)** | ✅ Ready | Text posts, link sharing, media uploads |
+| **X (Twitter)** | ✅ Ready | Text posts, link sharing, auto recording |
+| **TikTok** | ✅ Ready | Video uploads, captions, auto recording |
+| **Pinterest** | ✅ Ready | Image pins, URL pins, descriptions, auto recording |
 | **LinkedIn** | 🚧 In Progress | Text posts, link sharing, article publishing |
 | **Reddit** | 🚧 In Progress | Text posts, link posts, subreddit targeting |
 | **Facebook** | 🚧 In Progress | Text posts, link sharing, page posting |
@@ -312,15 +350,28 @@ social-poster/
 │   ├── browser-automation.js # Puppeteer automation
 │   ├── ai-service.js        # AI-powered content generation
 │   ├── post-service.js      # Multi-platform posting orchestration
+│   ├── selector-validator.js # Selector validation and recording
 │   └── platforms/           # Platform implementations
-│       ├── x-com.js
-│       ├── linkedin.js
+│       ├── x-com.js         # X (Twitter) platform
+│       ├── tiktok.js        # TikTok platform
+│       ├── pinterest.js     # Pinterest platform
+│       ├── linkedin.js      # LinkedIn platform
+│       ├── reddit.js        # Reddit platform
 │       └── ...
+├── scripts/                 # Utility scripts
+│   ├── auto-record-platforms.js # Enhanced auto recording
+│   ├── record-selectors.js  # Basic selector recording
+│   └── validate-selectors.js # Selector validation
 ├── test/                    # Test files
+│   ├── platforms/           # Platform-specific tests
+│   └── ...
 ├── examples/                # Usage examples
 │   ├── basic-usage.js
 │   ├── ai-content-generation.js
-│   └── batch-posting.js
+│   ├── batch-posting.js
+│   └── multi-platform-posting.js
+├── docs/                    # Documentation
+│   └── AUTO_RECORDING.md    # Auto recording guide
 └── index.js                 # Main module export
 ```
 

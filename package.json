@@ -26,6 +26,7 @@
     "test:cli": "mocha test/cli.test.js",
     "example": "node examples/basic-usage.js",
     "example:batch": "node examples/batch-posting.js",
+    "example:multi": "node examples/multi-platform-posting.js",
     "cli": "./bin/social-poster.js",
     "setup": "./bin/social-poster.js setup",
     "post": "./bin/social-poster.js post",
@@ -36,6 +37,7 @@
     "format": "prettier --write src/ test/ bin/ examples/",
     "validate-selectors": "node scripts/validate-selectors.js",
     "record-selectors": "node scripts/record-selectors.js",
+    "auto-record": "node scripts/auto-record-platforms.js",
     "prepare": "husky"
   },
   "bin": {
@@ -115,6 +117,12 @@
     },
     "./platforms/hacker-news": {
       "import": "./src/platforms/hacker-news.js"
+    },
+    "./platforms/tiktok": {
+      "import": "./src/platforms/tiktok.js"
+    },
+    "./platforms/pinterest": {
+      "import": "./src/platforms/pinterest.js"
     }
   }
 }
