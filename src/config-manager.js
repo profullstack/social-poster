@@ -249,11 +249,15 @@ export function saveConfig(config, configPath = getConfigPath()) {
     // Ensure directory exists
     const configDir = path.dirname(configPath);
     if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
+      fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
     }
 
-    // Save config (validation is optional and done elsewhere)
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    // Save config (validation is optional and done elsewhere).
+    // This file holds OAuth access/refresh tokens, client secrets, a Nostr
+    // private key, and HN credentials — write it owner-only so other local
+    // users on a shared machine can't read it off the default 0644 mode.
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    fs.chmodSync(configPath, 0o600);
 
     return { success: true };
   } catch (error) {

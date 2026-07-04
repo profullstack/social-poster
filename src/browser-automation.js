@@ -46,11 +46,15 @@ export function saveSessions(sessions, sessionsPath = getSessionsPath()) {
     // Ensure directory exists
     const sessionsDir = path.dirname(sessionsPath);
     if (!fs.existsSync(sessionsDir)) {
-      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(sessionsDir, { recursive: true, mode: 0o700 });
     }
 
-    // Save sessions
-    fs.writeFileSync(sessionsPath, JSON.stringify(sessions, null, 2));
+    // Save sessions. This file holds live browser cookies for every logged-in
+    // platform (X, LinkedIn, Reddit, Facebook, TikTok, Pinterest) — equivalent
+    // to a password for each account, so write it owner-only rather than the
+    // default 0644 that lets any other local user read it.
+    fs.writeFileSync(sessionsPath, JSON.stringify(sessions, null, 2), { mode: 0o600 });
+    fs.chmodSync(sessionsPath, 0o600);
 
     return { success: true };
   } catch (error) {

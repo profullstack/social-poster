@@ -227,9 +227,21 @@ describe('Config Manager', () => {
       const config = { test: true };
 
       const result = saveConfig(config, invalidPath);
-      
+
       expect(result.success).to.be.false;
       expect(result.error).to.include('Failed to save config');
+    });
+
+    it('should write the config file as owner-only (0600), not world-readable', function () {
+      if (process.platform === 'win32') {
+        this.skip(); // POSIX mode bits aren't meaningfully enforced on Windows
+      }
+
+      const config = { platforms: { x: { accessToken: 'secret-token' } } };
+      saveConfig(config, testConfigPath);
+
+      const stats = fs.statSync(testConfigPath);
+      expect(stats.mode & 0o777).to.equal(0o600);
     });
   });
 
