@@ -114,9 +114,21 @@ describe('Browser Automation', () => {
       const sessions = { test: true };
 
       const result = saveSessions(sessions, invalidPath);
-      
+
       expect(result.success).to.be.false;
       expect(result.error).to.include('Failed to save sessions');
+    });
+
+    it('should write the sessions file as owner-only (0600), not world-readable', function () {
+      if (process.platform === 'win32') {
+        this.skip(); // POSIX mode bits aren't meaningfully enforced on Windows
+      }
+
+      const sessions = { x: { cookies: [{ name: 'auth', value: 'live-cookie' }] } };
+      saveSessions(sessions, testSessionsPath);
+
+      const stats = fs.statSync(testSessionsPath);
+      expect(stats.mode & 0o777).to.equal(0o600);
     });
   });
 
