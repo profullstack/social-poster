@@ -1,16 +1,30 @@
 /**
  * AI Service
- * Handles AI-powered content generation for social media posts using OpenAI
+ * Handles AI-powered content generation for social media posts.
+ * c0mpute first (see ./c0mpute.js), OpenAI as the fallback when a key is set.
  */
 
 import OpenAI from 'openai';
+import { createC0mpute } from './c0mpute.js';
 
 /**
  * AI Service class for generating viral social media content
  */
 export class AIService {
+  /**
+   * @param {object} options
+   * @param {string} [options.apiKey] OpenAI API key (fallback)
+   * @param {string} [options.c0mputeApiKey] c0mpute key, default C0MPUTE_API_KEY
+   * @param {object|false} [options.c0mpute] a router to use instead, or false to skip c0mpute
+   */
   constructor(options = {}) {
-    if (!options.apiKey) {
+    this.c0mpute =
+      options.c0mpute === false
+        ? null
+        : options.c0mpute ||
+          createC0mpute({ apiKey: options.c0mputeApiKey, timeoutMs: options.c0mputeTimeoutMs });
+
+    if (!options.apiKey && !this.c0mpute) {
       throw new Error('OpenAI API key is required');
     }
 
@@ -21,9 +35,11 @@ export class AIService {
       ...options,
     };
 
-    this.openai = new OpenAI({
-      apiKey: this.options.apiKey,
-    });
+    this.openai = this.options.apiKey
+      ? new OpenAI({
+          apiKey: this.options.apiKey,
+        })
+      : null;
 
     // Usage tracking
     this.stats = {
@@ -71,22 +87,19 @@ export class AIService {
 
       console.log('🤖 Generating viral content with AI...');
 
-      // Call OpenAI API
-      const response = await this.openai.chat.completions.create({
-        model: this.options.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: this.options.maxTokens,
+      // c0mpute first, then OpenAI
+      const response = await this.complete({
+        system: systemPrompt,
+        user: userPrompt,
+        maxTokens: this.options.maxTokens,
         temperature: this.options.temperature,
       });
 
       // Update stats
       this.updateStats(response, true);
 
-      const generatedText = response.choices[0]?.message?.content?.trim();
-      
+      const generatedText = response.text?.trim();
+
       if (!generatedText) {
         throw new Error('No content generated');
       }
@@ -105,7 +118,8 @@ export class AIService {
         success: true,
         content,
         metadata: {
-          model: this.options.model,
+          model: response.model,
+          provider: response.provider,
           tokens: response.usage?.total_tokens || 0,
           hashtags: this.extractHashtags(generatedText),
         },
@@ -118,6 +132,54 @@ export class AIService {
         error: `Failed to generate content: ${error.message}`,
       };
     }
+  }
+
+  /**
+   * One completion: c0mpute first, OpenAI when c0mpute fails and a key is set.
+   * @param {object} req
+   * @param {string} req.system
+   * @param {string} req.user
+   * @param {number} [req.maxTokens]
+   * @param {number} [req.temperature]
+   * @returns {Promise<{text: string, model: string, provider: string, usage: {total_tokens: number}}>}
+   */
+  async complete({ system, user, maxTokens, temperature }) {
+    if (this.c0mpute) {
+      try {
+        const r = await this.c0mpute.generateText({
+          system,
+          user,
+          maxTokens,
+          temperature,
+          feature: 'social-poster',
+        });
+        return {
+          text: r.text,
+          model: r.model,
+          provider: r.provider,
+          usage: { total_tokens: (r.usage?.inputTokens || 0) + (r.usage?.outputTokens || 0) },
+        };
+      } catch (error) {
+        if (!this.openai) throw error;
+        console.warn(`c0mpute failed, falling back to OpenAI: ${error.message}`);
+      }
+    }
+
+    const response = await this.openai.chat.completions.create({
+      model: this.options.model,
+      messages: [
+        ...(system ? [{ role: 'system', content: system }] : []),
+        { role: 'user', content: user },
+      ],
+      max_tokens: maxTokens,
+      temperature,
+    });
+    return {
+      text: response.choices[0]?.message?.content ?? '',
+      model: this.options.model,
+      provider: 'openai',
+      usage: response.usage,
+    };
   }
 
   /**
@@ -327,15 +389,10 @@ Keep the content concise, impactful, and optimized for social media engagement. 
    */
   async testConnection() {
     try {
-      const response = await this.openai.chat.completions.create({
-        model: this.options.model,
-        messages: [{ role: 'user', content: 'Test' }],
-        max_tokens: 5,
-      });
-      
-      return !!response.choices?.[0]?.message?.content;
+      const response = await this.complete({ user: 'Test', maxTokens: 5 });
+      return !!response.text;
     } catch (error) {
-      console.error('OpenAI API connection test failed:', error.message);
+      console.error('AI connection test failed:', error.message);
       return false;
     }
   }
@@ -346,7 +403,7 @@ export let aiService = null;
 
 /**
  * Initialize AI service with API key
- * @param {string} apiKey - OpenAI API key
+ * @param {string} [apiKey] - OpenAI API key (fallback; c0mpute is tried first)
  * @param {object} [options] - Additional options
  * @returns {AIService} Initialized AI service
  */

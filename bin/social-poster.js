@@ -18,6 +18,7 @@ import { loadConfig, getConfigPath, getPlatformDisplayName, getAIConfig, isAIRea
 import { BrowserAutomation } from '../src/browser-automation.js';
 import { PostService } from '../src/post-service.js';
 import { initializeAIService } from '../src/ai-service.js';
+import { isC0mputeDisabled } from '../src/c0mpute.js';
 import { SetupWizard } from '../src/setup-wizard.js';
 import { MediaUploader } from '../src/media-upload.js';
 
@@ -175,7 +176,7 @@ export async function handlePostCommand(argv, postService = null, config = null)
     // Handle AI-generated content
     if (content.type === 'ai-generated') {
       if (!isAIReady(config)) {
-        console.error(colors.red('❌ AI is not configured. Please run setup to configure OpenAI API key.'));
+        console.error(colors.red('❌ AI is not configured. C0MPUTE_DISABLED is set; run setup to configure an OpenAI API key.'));
         process.exit(1);
       }
 
@@ -502,7 +503,7 @@ function configureCommandLine() {
           default: false
         });
     })
-    .command('setup', 'Configure OpenAI API key and other settings')
+    .command('setup', 'Configure AI (c0mpute, OpenAI fallback) and other settings')
     .command('config', 'Show current configuration')
     .option('verbose', {
       alias: 'v',
@@ -552,16 +553,17 @@ async function handleConfigCommand(argv) {
 
     console.log('');
     console.log(colors.yellow('AI Settings:'));
+    console.log(`  c0mpute: ${isC0mputeDisabled() ? colors.gray('disabled') : colors.green('first')}${config.ai?.c0mputeApiKey || process.env.C0MPUTE_API_KEY ? ' (key set)' : ' (free tier, no key)'}`);
     if (config.ai?.enabled && config.ai?.openaiApiKey) {
-      console.log(`  Status: ${colors.green('enabled')}`);
+      console.log(`  OpenAI fallback: ${colors.green('enabled')}`);
       console.log(`  Model: ${config.ai.model}`);
       console.log(`  Temperature: ${config.ai.temperature}`);
       console.log(`  Max tokens: ${config.ai.maxTokens}`);
       const maskedKey = `${config.ai.openaiApiKey.substring(0, 7)}...${config.ai.openaiApiKey.substring(config.ai.openaiApiKey.length - 4)}`;
       console.log(`  API key: ${maskedKey}`);
     } else {
-      console.log(`  Status: ${colors.gray('disabled')}`);
-      console.log('  Run \'social-poster setup\' to configure AI features');
+      console.log(`  OpenAI fallback: ${colors.gray('disabled')}`);
+      console.log('  Run \'social-poster setup\' to configure an OpenAI fallback key');
     }
 
   } catch (error) {

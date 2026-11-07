@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { isC0mputeDisabled } from './c0mpute.js';
 
 /**
  * Get the path to the configuration file
@@ -85,6 +86,7 @@ export function getDefaultConfig() {
     },
     ai: {
       openaiApiKey: '',
+      c0mputeApiKey: '',
       model: 'gpt-4o-mini',
       maxTokens: 500,
       temperature: 0.7,
@@ -185,7 +187,7 @@ export function validateConfig(config) {
   if (config.ai) {
     const { openaiApiKey, model, maxTokens, temperature, enabled } = config.ai;
 
-    if (enabled && !openaiApiKey?.trim()) {
+    if (enabled && !openaiApiKey?.trim() && isC0mputeDisabled()) {
       errors.push('AI is enabled but OpenAI API key is missing');
     }
 
@@ -396,12 +398,23 @@ export function validateOpenAIApiKey(apiKey) {
  * @returns {boolean} True if AI is ready to use
  */
 export function isAIReady(config) {
+  // c0mpute needs no setup (a key only lifts the free tier), so AI is ready
+  // unless C0MPUTE_DISABLED turns it off.
+  if (!isC0mputeDisabled()) {
+    return true;
+  }
+
   const ai = config?.ai;
   if (!ai?.enabled) {
     return false;
   }
 
-  return !!(ai.openaiApiKey?.trim() && validateOpenAIApiKey(ai.openaiApiKey));
+  return hasOpenAIKey(config);
+}
+
+function hasOpenAIKey(config) {
+  const key = config?.ai?.openaiApiKey;
+  return !!(key?.trim() && validateOpenAIApiKey(key));
 }
 
 /**
@@ -414,10 +427,13 @@ export function getAIConfig(config) {
     return null;
   }
 
+  const ai = config?.ai || {};
   return {
-    apiKey: config.ai.openaiApiKey,
-    model: config.ai.model || 'gpt-4o-mini',
-    maxTokens: config.ai.maxTokens || 500,
-    temperature: config.ai.temperature || 0.7,
+    // OpenAI is the fallback, used only when AI is enabled with a valid key
+    apiKey: ai.enabled && hasOpenAIKey(config) ? ai.openaiApiKey : undefined,
+    c0mputeApiKey: ai.c0mputeApiKey || undefined,
+    model: ai.model || 'gpt-4o-mini',
+    maxTokens: ai.maxTokens || 500,
+    temperature: ai.temperature || 0.7,
   };
 }
