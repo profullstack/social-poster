@@ -14,6 +14,10 @@ import sinon from 'sinon';
 // Import service to test
 import { AIService } from '../src/ai-service.js';
 
+// The OpenAI tests below exercise the fallback path; c0mpute is covered in
+// its own block with a stub router.
+process.env.C0MPUTE_DISABLED = '1';
+
 describe('AI Service', () => {
   let sandbox;
   let aiService;
@@ -236,6 +240,66 @@ describe('AI Service', () => {
       const stats = aiService.getUsageStats();
       expect(stats.totalRequests).to.equal(1);
       expect(stats.totalTokens).to.equal(80);
+    });
+  });
+
+  describe('c0mpute first', () => {
+    const stubRouter = (impl) => ({ generateText: sinon.stub().callsFake(impl) });
+
+    it('does not need an OpenAI key when c0mpute is available', () => {
+      const service = new AIService({ c0mpute: stubRouter(async () => ({})) });
+      expect(service.openai).to.equal(null);
+    });
+
+    it('uses c0mpute and never calls OpenAI when c0mpute answers', async () => {
+      const router = stubRouter(async () => ({
+        text: 'Hello from c0mpute #ai',
+        provider: 'c0mpute',
+        model: 'qwen',
+        usage: { inputTokens: 10, outputTokens: 5 },
+      }));
+      const service = new AIService({ apiKey: 'sk-test', c0mpute: router });
+      service.openai = mockOpenAI;
+
+      const result = await service.generateViralPost({ prompt: 'launch' });
+
+      expect(result.success).to.equal(true);
+      expect(result.content.text).to.equal('Hello from c0mpute #ai');
+      expect(result.metadata.provider).to.equal('c0mpute');
+      expect(result.metadata.tokens).to.equal(15);
+      expect(router.generateText.calledOnce).to.equal(true);
+      expect(mockOpenAI.chat.completions.create.called).to.equal(false);
+    });
+
+    it('falls back to OpenAI when c0mpute fails', async () => {
+      const router = stubRouter(async () => {
+        throw new Error('no node');
+      });
+      mockOpenAI.chat.completions.create.resolves({
+        choices: [{ message: { content: 'From OpenAI' } }],
+        usage: { total_tokens: 7 },
+      });
+      const service = new AIService({ apiKey: 'sk-test', c0mpute: router });
+      service.openai = mockOpenAI;
+
+      const result = await service.generateViralPost({ prompt: 'launch' });
+
+      expect(result.success).to.equal(true);
+      expect(result.content.text).to.equal('From OpenAI');
+      expect(result.metadata.provider).to.equal('openai');
+    });
+
+    it('reports the c0mpute error when there is no OpenAI fallback', async () => {
+      const service = new AIService({
+        c0mpute: stubRouter(async () => {
+          throw new Error('no node');
+        }),
+      });
+
+      const result = await service.generateViralPost({ prompt: 'launch' });
+
+      expect(result.success).to.equal(false);
+      expect(result.error).to.include('no node');
     });
   });
 });

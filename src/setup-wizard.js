@@ -146,11 +146,11 @@ export class SetupWizard {
       {
         type: 'password',
         name: 'openaiApiKey',
-        message: 'Enter your OpenAI API key:',
+        message: 'OpenAI API key (fallback; leave blank to use c0mpute only):',
         mask: '*',
         validate: (input) => {
           if (!input) {
-            return 'API key is required for AI features.';
+            return true;
           }
           if (!input.startsWith('sk-')) {
             return 'OpenAI API key should start with "sk-".';

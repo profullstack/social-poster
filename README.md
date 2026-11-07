@@ -6,7 +6,7 @@ A powerful CLI tool for posting to multiple social media platforms with Puppetee
 
 - 🚀 **Multi-platform posting**: Support for X (Twitter), TikTok, Pinterest, LinkedIn, Reddit, Facebook, and more
 - 🎬 **Auto recording**: Intelligent selector recording with real-time validation and confidence scoring
-- 🤖 **AI-powered content generation**: Generate viral social media posts using OpenAI
+- 🤖 **AI-powered content generation**: Generate viral social media posts on c0mpute, with OpenAI as an optional fallback
 - 🔐 **Browser-based authentication**: Uses Puppeteer to login like a human - no API restrictions
 - 💾 **Session management**: Saves login sessions to avoid repeated authentication
 - 📝 **Rich content support**: Text posts, link sharing, image uploads, and video uploads
@@ -252,7 +252,15 @@ Configuration is stored in `~/.config/social-poster/config.json`:
 
 ### AI Configuration
 
-To use AI-powered content generation, you need an OpenAI API key:
+AI generation runs on the [c0mpute](https://c0mpute.com) peer network first, through [`@profullstack/ai-providers`](https://www.npmjs.com/package/@profullstack/ai-providers). It needs no setup: without a key you get a free tier of 10 calls a day, and an Infernet account key lifts that.
+
+| Variable | |
+|---|---|
+| `C0MPUTE_API_KEY` | Infernet account key (`ik_live_...`). Also `ai.c0mputeApiKey` in the config, or `c0mputeApiKey` in `new AIService({...})`. |
+| `C0MPUTE_TIMEOUT_MS` | Whole call, default 300000. c0mpute is slow (60 to 240 s per post is normal). |
+| `C0MPUTE_DISABLED` | `1` skips c0mpute and uses OpenAI only. |
+
+OpenAI stays as the fallback when c0mpute fails. To configure it:
 
 1. **Get an API key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys)
 2. **Run setup**: `sp setup`
